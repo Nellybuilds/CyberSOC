@@ -10,10 +10,14 @@ import ReportGenerator from "@/components/ReportGenerator";
 import BusinessImpactMetrics from "@/components/BusinessImpactMetrics";
 import type { Alert, Endpoint, LogEntry } from "@shared/schema";
 import { useWorkflow } from "@/hooks/use-workflow";
+import { useScenario } from "@/contexts/ScenarioContext";
+import { Badge } from "@/components/ui/badge";
+import { BookOpen, AlertTriangle, Users, MapPin } from "lucide-react";
 
 export default function Dashboard() {
   const [userRole, setUserRole] = useState<"Analyst" | "Manager" | "Client">("Analyst");
   const [selectedAlert, setSelectedAlert] = useState<string | null>(null);
+  const { selectedScenario } = useScenario();
   
   const { data: alerts = [], isLoading: alertsLoading } = useQuery<Alert[]>({
     queryKey: ["/api/alerts"],
@@ -50,6 +54,43 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <Navbar userRole={userRole} onRoleChange={setUserRole} />
+      
+      {/* Active Scenario Indicator */}
+      {selectedScenario && (
+        <div className="bg-primary/5 border-b border-primary/20 px-6 py-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <BookOpen className="w-5 h-5 text-primary" />
+                <span className="font-semibold text-primary">Active Playbook:</span>
+                <span className="font-medium">{selectedScenario.name}</span>
+              </div>
+              <Badge variant={selectedScenario.threatLevel === 'Critical' ? 'destructive' : 'secondary'}>
+                {selectedScenario.threatLevel}
+              </Badge>
+            </div>
+            
+            <div className="flex items-center gap-6 text-sm text-muted-foreground">
+              <div className="flex items-center gap-1">
+                <AlertTriangle className="w-4 h-4" />
+                <span>Evidence: {selectedScenario.evidenceTypes.join(', ')}</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <Users className="w-4 h-4" />
+                <span>{selectedScenario.affectedSystemsCount} systems</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <MapPin className="w-4 h-4" />
+                <span>MITRE ATT&CK Coverage</span>
+              </div>
+            </div>
+          </div>
+          
+          <div className="mt-2 text-sm text-muted-foreground">
+            {selectedScenario.description}
+          </div>
+        </div>
+      )}
       
       <div className="flex h-screen overflow-hidden">
         <WorkflowTracker 
