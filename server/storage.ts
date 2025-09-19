@@ -222,16 +222,87 @@ export class FileStorage implements IStorage {
     await this.writeJsonFile("endpoints.json", updatedEndpoints);
   }
 
-  async applyScenario(scenario: string): Promise<{ activeAlertId: string; scenarioName: string }> {
-    // Map scenarios to alert IDs and configure endpoints
-    const scenarioMap = {
-      "ransomware": { alertId: "alert-001", name: "Ransomware Attack", affectedEndpoints: ["endpoint-01", "endpoint-02", "endpoint-03", "endpoint-04", "endpoint-05"] },
-      "credential-compromise": { alertId: "alert-004", name: "Credential Compromise", affectedEndpoints: ["endpoint-03", "endpoint-06", "endpoint-07"] },
-      "phishing": { alertId: "alert-005", name: "Phishing Campaign", affectedEndpoints: ["endpoint-01", "endpoint-02"] }
+  // Incident methods
+  async createIncident(incident: Omit<Incident, "id" | "created_at" | "updated_at">): Promise<Incident> {
+    const incidents = await this.readJsonFile<Incident>("incidents.json");
+    const newIncident: Incident = {
+      ...incident,
+      id: randomUUID(),
+      created_at: new Date(),
+      updated_at: new Date(),
+    };
+
+    incidents.push(newIncident);
+    await this.writeJsonFile("incidents.json", incidents);
+    return newIncident;
+  }
+
+  async getIncidents(filters?: { status?: string; owner?: string; severity?: string }): Promise<Incident[]> {
+    let incidents = await this.readJsonFile<Incident>("incidents.json");
+
+    if (filters) {
+      if (filters.status) {
+        incidents = incidents.filter(incident => incident.status === filters.status);
+      }
+      if (filters.owner) {
+        incidents = incidents.filter(incident => incident.owner === filters.owner);
+      }
+      if (filters.severity) {
+        incidents = incidents.filter(incident => incident.severity === filters.severity);
+      }
+    }
+
+    // Sort by created_at (newest first)
+    incidents.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    return incidents;
+  }
+
+  async getIncident(id: string): Promise<Incident | undefined> {
+    const incidents = await this.readJsonFile<Incident>("incidents.json");
+    return incidents.find(incident => incident.id === id);
+  }
+
+  async updateIncident(id: string, updates: Partial<Incident>): Promise<Incident | undefined> {
+    const incidents = await this.readJsonFile<Incident>("incidents.json");
+    const index = incidents.findIndex(incident => incident.id === id);
+    if (index === -1) return undefined;
+
+    incidents[index] = { ...incidents[index], ...updates, updated_at: new Date() };
+    await this.writeJsonFile("incidents.json", incidents);
+    return incidents[index];
+  }
+
+  async createIncidentFromType(incidentType: string): Promise<{ incident: Incident; activeAlertId: string; incidentName: string }> {
+    // Map incident types to alert IDs and their configurations
+    const incidentTypeMap = {
+      "ransomware": {
+        alertId: "alert-001",
+        name: "Ransomware Attack",
+        playbookId: "perimeter-breach",
+        affectedEndpoints: ["endpoint-01", "endpoint-02", "endpoint-03", "endpoint-04", "endpoint-05"],
+        status: "New" as const,
+        severity: "Critical" as const
+      },
+      "credential-compromise": {
+        alertId: "alert-004", 
+        name: "Credential Compromise",
+        playbookId: "internal-reconnaissance",
+        affectedEndpoints: ["endpoint-03", "endpoint-06", "endpoint-07"],
+        status: "New" as const,
+        severity: "Critical" as const
+      },
+      "phishing": {
+        alertId: "alert-005",
+        name: "Phishing Campaign",
+        playbookId: "lateral-movement", 
+        affectedEndpoints: ["endpoint-01", "endpoint-02"],
+        status: "New" as const,
+        severity: "High" as const
+      }
     };
     
-    const config = scenarioMap[scenario as keyof typeof scenarioMap];
-    if (!config) throw new Error(`Unknown scenario: ${scenario}`);
+    const config = incidentTypeMap[incidentType as keyof typeof incidentTypeMap];
+    if (!config) throw new Error(`Unknown incident type: ${incidentType}`);
     
     // Update endpoints and alerts to match DatabaseStorage behavior
     const endpoints = await this.readJsonFile<Endpoint>("endpoints.json");
@@ -240,7 +311,7 @@ export class FileStorage implements IStorage {
     // Reset all endpoints to Normal first
     const resetEndpoints = endpoints.map(ep => ({ ...ep, status: "Normal" as const }));
     
-    // Set affected endpoints for this scenario
+    // Set affected endpoints for this incident
     const updatedEndpoints = resetEndpoints.map(ep => 
       config.affectedEndpoints.includes(ep.id) 
         ? { ...ep, status: "Affected" as const }
@@ -250,7 +321,7 @@ export class FileStorage implements IStorage {
     // Update the target alert to make it "fresh" and active
     const updatedAlerts = alerts.map(alert => 
       alert.id === config.alertId
-        ? { ...alert, status: "New" as const, timestamp: new Date().toISOString() }
+        ? { ...alert, status: config.status, timestamp: new Date().toISOString() }
         : alert
     );
     
@@ -258,7 +329,18 @@ export class FileStorage implements IStorage {
     await this.writeJsonFile("endpoints.json", updatedEndpoints);
     await this.writeJsonFile("alerts.json", updatedAlerts);
     
-    return { activeAlertId: config.alertId, scenarioName: config.name };
+    // Create the incident record
+    const incident = await this.createIncident({
+      alert_id: config.alertId,
+      playbook_id: config.playbookId,
+      status: "Open",
+      severity: config.severity,
+      title: config.name,
+      description: `Incident created from ${config.name} detection`,
+      owner: null, // Will be assigned when incident is picked up
+    });
+    
+    return { incident, activeAlertId: config.alertId, incidentName: config.name };
   }
 }
 
@@ -528,6 +610,7 @@ export class DatabaseStorage implements IStorage {
       severity: config.severity,
       title: config.name,
       description: `Incident created from ${config.name} detection`,
+      owner: null, // Will be assigned when incident is picked up
     });
     
     return { incident, activeAlertId: config.alertId, incidentName: config.name };
