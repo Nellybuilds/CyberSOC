@@ -1,1 +1,22 @@
-[]
+[
+  {
+    "alert_id": "alert-001",
+    "current_node": "scoping_phase",
+    "completed_nodes": [
+      "detection_phase"
+    ],
+    "actions_taken": [
+      {
+        "timestamp": "2025-09-19T21:11:39.368Z",
+        "action": "Advanced to Scoping phase",
+        "details": {
+          "node": "scoping_phase"
+        }
+      }
+    ],
+    "status": "Active",
+    "user_role": "Analyst",
+    "started_at": "2025-09-19T21:11:39.368Z",
+    "id": "d3656359-0897-4c7d-bfaa-8404a72a4b36"
+  }
+]
