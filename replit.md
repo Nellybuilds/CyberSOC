@@ -2,9 +2,9 @@
 
 ## Overview
 
-This is a cybersecurity incident response playbook assistant - a web-based training and simulation tool designed to guide cybersecurity analysts through mock ransomware attack scenarios. The application serves as an MVP for incident response training, featuring an interactive workflow system, role-based views for different stakeholders (Analyst, Manager, Client), and comprehensive logging and reporting capabilities.
+This is a cybersecurity incident response playbook assistant - a web-based operational tool designed to guide cybersecurity analysts through real incident response procedures. The application serves as a comprehensive incident response assistant, featuring an interactive workflow system, role-based views for different stakeholders (Analyst, Manager, Client), and comprehensive logging and reporting capabilities.
 
-The system simulates a realistic cybersecurity environment with mock alerts, endpoint data, security logs, and AI-guided response workflows that follow industry-standard incident response procedures including MITRE ATT&CK framework integration.
+The system provides a realistic cybersecurity incident management environment with live alerts, endpoint data, security logs, and AI-guided response workflows that follow industry-standard incident response procedures including MITRE ATT&CK framework integration.
 
 ## User Preferences
 
@@ -29,12 +29,12 @@ Preferred communication style: Simple, everyday language.
 ### Data Layer
 - **PostgreSQL Ready**: Drizzle ORM configured for PostgreSQL with Neon database support
 - **Schema Design**: Comprehensive TypeScript schemas using Zod for alerts, endpoints, logs, playbooks, and workflow sessions
-- **Mock Data**: JSON files providing realistic cybersecurity incident data for training scenarios
+- **Mock Data**: JSON files providing realistic cybersecurity incident data for operational scenarios
 
 ### Key Features Architecture
 - **Role-Based Views**: Dynamic UI adaptation based on user role (Analyst/Manager/Client)
 - **Workflow Engine**: Step-by-step guided incident response using hardcoded playbook logic
-- **Real-time Simulation**: Mock security events and logs with realistic timestamps and data
+- **Live Data Integration**: Security events and logs with realistic timestamps and data
 - **MITRE ATT&CK Integration**: Technique mapping and visualization throughout the incident lifecycle
 - **Report Generation**: Automated post-incident reporting with export capabilities
 

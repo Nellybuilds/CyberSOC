@@ -221,8 +221,8 @@ export default function AIAssistantPanel({
               </h4>
               <p className="text-sm text-muted-foreground mb-3">
                 {selectedScenario 
-                  ? `Real-time analysis of ${selectedScenario.name.toLowerCase()} with role-based recommendations following NIST and SANS frameworks.`
-                  : "Select a scenario to begin AI-powered incident response guidance."
+                  ? `Active incident analysis using ${selectedScenario.name.toLowerCase()} playbook with role-based recommendations following NIST and SANS frameworks.`
+                  : "Select a playbook to begin AI-powered incident response guidance."
                 }
               </p>
             </div>
@@ -276,7 +276,7 @@ export default function AIAssistantPanel({
             </div>
           ) : (
             <div className="text-center text-muted-foreground py-4">
-              Please select a scenario to view AI-powered recommendations.
+              Please select a playbook to view AI-powered recommendations.
             </div>
           )}
         </div>
@@ -301,7 +301,7 @@ export default function AIAssistantPanel({
         <div className="bg-card border border-border rounded-lg p-4">
           <h4 className="font-medium mb-3 flex items-center">
             <Activity className="w-4 h-4 mr-2" />
-            Session Progress
+            Investigation Progress
           </h4>
           <div className="space-y-3">
             <div className="flex items-center justify-between text-sm">

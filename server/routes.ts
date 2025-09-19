@@ -150,7 +150,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Reset simulation - clear all workflow sessions and apply selected scenario
+  // Create Incident - operational incident response
+  app.post("/api/incidents/create", async (req, res) => {
+    try {
+      const { incidentType } = req.body;
+      
+      // Validate incident type
+      const validIncidentTypes = ["ransomware", "credential-compromise", "phishing"];
+      if (!incidentType || !validIncidentTypes.includes(incidentType)) {
+        return res.status(400).json({ error: "Invalid incident type. Must be one of: " + validIncidentTypes.join(", ") });
+      }
+      
+      // Clear all existing workflow sessions for fresh start
+      await storage.clearAllWorkflowSessions();
+      
+      // Create incident from the selected type
+      const incidentResult = await storage.createIncidentFromType(incidentType);
+      
+      res.json({ 
+        success: true, 
+        incidentType,
+        incidentId: incidentResult.incident.id,
+        activeAlertId: incidentResult.activeAlertId,
+        message: `${incidentResult.incidentName} incident created successfully.` 
+      });
+    } catch (error: any) {
+      console.error("Error creating incident:", error);
+      res.status(500).json({ 
+        error: "Failed to create incident", 
+        details: error.message 
+      });
+    }
+  });
+
+  // Legacy endpoint - for backwards compatibility
   app.post("/api/workflow-sessions/reset", async (req, res) => {
     try {
       const { scenario } = req.body;
@@ -165,13 +198,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await storage.clearAllWorkflowSessions();
       
       // Apply the selected scenario
-      const scenarioResult = await storage.applyScenario(scenario);
+      const scenarioResult = await storage.createIncidentFromType(scenario);
       
       res.json({ 
         success: true, 
         scenario,
         activeAlertId: scenarioResult.activeAlertId,
-        message: `${scenarioResult.scenarioName} simulation started successfully.` 
+        message: `${scenarioResult.incidentName} incident created successfully.` 
       });
     } catch (error) {
       console.error("Failed to reset simulation:", error);

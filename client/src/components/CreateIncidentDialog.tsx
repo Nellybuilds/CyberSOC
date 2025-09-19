@@ -13,12 +13,12 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
-interface NewSimulationDialogProps {
+interface CreateIncidentDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-interface ScenarioOption {
+interface IncidentType {
   id: string;
   title: string;
   description: string;
@@ -28,57 +28,57 @@ interface ScenarioOption {
   estimatedTime: string;
 }
 
-const SCENARIO_OPTIONS: ScenarioOption[] = [
+const INCIDENT_TYPES: IncidentType[] = [
   {
     id: "ransomware",
     title: "Ransomware Attack",
-    description: "Multiple endpoints infected with ransomware. Practice containment and recovery procedures.",
+    description: "Multiple endpoints infected with ransomware requiring immediate containment and recovery procedures.",
     icon: Shield,
     alertId: "alert-001",
     severity: "Critical",
-    estimatedTime: "20-30 minutes"
+    estimatedTime: "2-4 hours"
   },
   {
     id: "credential-compromise", 
     title: "Credential Compromise",
-    description: "Suspicious login activity with evidence of lateral movement. Focus on account security.",
+    description: "Suspicious login activity with evidence of lateral movement requiring account security response.",
     icon: Key,
     alertId: "alert-004",
     severity: "Critical", 
-    estimatedTime: "15-25 minutes"
+    estimatedTime: "1-3 hours"
   },
   {
     id: "phishing",
     title: "Phishing Campaign",
-    description: "Malicious email campaign targeting users. Practice email security response.",
+    description: "Malicious email campaign targeting users requiring email security response and user awareness.",
     icon: Mail,
     alertId: "alert-005",
     severity: "High",
-    estimatedTime: "10-20 minutes"
+    estimatedTime: "30min-2 hours"
   }
 ];
 
-export default function NewSimulationDialog({ open, onOpenChange }: NewSimulationDialogProps) {
-  const [selectedScenario, setSelectedScenario] = useState<string | null>(null);
+export default function CreateIncidentDialog({ open, onOpenChange }: CreateIncidentDialogProps) {
+  const [selectedIncidentType, setSelectedIncidentType] = useState<string | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const startSimulationMutation = useMutation({
-    mutationFn: async (scenarioId: string) => {
-      // Reset all workflow sessions and apply new scenario
-      const response = await apiRequest("POST", "/api/workflow-sessions/reset", { scenario: scenarioId });
+  const createIncidentMutation = useMutation({
+    mutationFn: async (incidentTypeId: string) => {
+      // Create new incident and assign appropriate playbook
+      const response = await apiRequest("POST", "/api/incidents/create", { incidentType: incidentTypeId });
       const result = await response.json();
       return { 
-        scenario: scenarioId, 
+        incidentType: incidentTypeId, 
         activeAlertId: result.activeAlertId,
-        scenarioName: result.message
+        incidentName: result.message
       };
     },
     onSuccess: (data) => {
-      const scenario = SCENARIO_OPTIONS.find(s => s.id === data.scenario);
+      const incidentType = INCIDENT_TYPES.find(i => i.id === data.incidentType);
       toast({
-        title: "New Simulation Started",
-        description: `${scenario?.title} scenario loaded successfully. Begin with the Detection phase.`,
+        title: "Incident Created",
+        description: `${incidentType?.title} incident created successfully. Begin investigation immediately.`,
       });
       
       // Invalidate specific queries to refresh all data with precise query keys
@@ -89,53 +89,53 @@ export default function NewSimulationDialog({ open, onOpenChange }: NewSimulatio
       queryClient.invalidateQueries({ queryKey: ["/api/alerts", data.activeAlertId, "playbook"] });
       
       onOpenChange(false);
-      setSelectedScenario(null);
+      setSelectedIncidentType(null);
       
       // No page reload - let React Query handle the data refresh
     },
     onError: (error) => {
       toast({
-        title: "Failed to Start Simulation",
-        description: "Unable to reset simulation state. Please try again.",
+        title: "Failed to Create Incident",
+        description: "Unable to create new incident. Please try again.",
         variant: "destructive"
       });
-      console.error("Failed to start new simulation:", error);
+      console.error("Failed to create new incident:", error);
     }
   });
 
-  const handleStartSimulation = () => {
-    if (selectedScenario) {
-      startSimulationMutation.mutate(selectedScenario);
+  const handleCreateIncident = () => {
+    if (selectedIncidentType) {
+      createIncidentMutation.mutate(selectedIncidentType);
     }
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto" data-testid="new-simulation-dialog">
+      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto" data-testid="create-incident-dialog">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <AlertTriangle className="w-5 h-5 text-primary" />
-            Start New Incident Simulation
+            Create New Incident
           </DialogTitle>
           <DialogDescription>
-            Choose an incident scenario to practice your cybersecurity response skills. 
-            This will reset all current progress and start fresh.
+            Select the type of security incident to create and assign the appropriate response playbook.
+            This will initialize a new incident response workflow.
           </DialogDescription>
         </DialogHeader>
 
         <div className="grid gap-4 mt-6">
-          {SCENARIO_OPTIONS.map((scenario) => {
-            const IconComponent = scenario.icon;
-            const isSelected = selectedScenario === scenario.id;
+          {INCIDENT_TYPES.map((incidentType) => {
+            const IconComponent = incidentType.icon;
+            const isSelected = selectedIncidentType === incidentType.id;
             
             return (
               <Card 
-                key={scenario.id}
+                key={incidentType.id}
                 className={`cursor-pointer transition-all hover:shadow-md ${
                   isSelected ? "ring-2 ring-primary bg-primary/5" : ""
                 }`}
-                onClick={() => setSelectedScenario(scenario.id)}
-                data-testid={`scenario-${scenario.id}`}
+                onClick={() => setSelectedIncidentType(incidentType.id)}
+                data-testid={`incident-type-${incidentType.id}`}
               >
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between">
@@ -144,17 +144,17 @@ export default function NewSimulationDialog({ open, onOpenChange }: NewSimulatio
                         isSelected ? "text-primary" : "text-muted-foreground"
                       }`} />
                       <div>
-                        <CardTitle className="text-lg">{scenario.title}</CardTitle>
+                        <CardTitle className="text-lg">{incidentType.title}</CardTitle>
                         <div className="flex items-center gap-2 mt-1">
                           <span className={`px-2 py-1 rounded text-xs font-medium ${
-                            scenario.severity === "Critical" 
+                            incidentType.severity === "Critical" 
                               ? "bg-destructive/10 text-destructive" 
                               : "bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400"
                           }`}>
-                            {scenario.severity}
+                            {incidentType.severity}
                           </span>
                           <span className="text-xs text-muted-foreground">
-                            Est. {scenario.estimatedTime}
+                            Est. {incidentType.estimatedTime}
                           </span>
                         </div>
                       </div>
@@ -163,7 +163,7 @@ export default function NewSimulationDialog({ open, onOpenChange }: NewSimulatio
                 </CardHeader>
                 <CardContent className="pt-0">
                   <CardDescription className="text-sm">
-                    {scenario.description}
+                    {incidentType.description}
                   </CardDescription>
                 </CardContent>
               </Card>
@@ -175,16 +175,16 @@ export default function NewSimulationDialog({ open, onOpenChange }: NewSimulatio
           <Button 
             variant="outline" 
             onClick={() => onOpenChange(false)}
-            data-testid="cancel-simulation"
+            data-testid="cancel-incident"
           >
             Cancel
           </Button>
           <Button 
-            onClick={handleStartSimulation}
-            disabled={!selectedScenario || startSimulationMutation.isPending}
-            data-testid="start-simulation"
+            onClick={handleCreateIncident}
+            disabled={!selectedIncidentType || createIncidentMutation.isPending}
+            data-testid="create-incident"
           >
-            {startSimulationMutation.isPending ? "Starting..." : "Start Simulation"}
+            {createIncidentMutation.isPending ? "Creating..." : "Create Incident"}
           </Button>
         </div>
       </DialogContent>

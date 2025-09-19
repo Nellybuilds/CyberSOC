@@ -91,6 +91,20 @@ export const workflowSessionSchema = z.object({
   user_role: z.enum(["Analyst", "Manager", "Client"]),
 });
 
+// Incident Schema
+export const incidentSchema = z.object({
+  id: z.string(),
+  alert_id: z.string(),
+  playbook_id: z.string().optional(),
+  status: z.enum(["Open", "In Progress", "Contained", "Resolved", "Closed"]),
+  severity: z.enum(["Critical", "High", "Medium", "Low"]),
+  owner: z.string().optional(),
+  created_at: z.string(),
+  updated_at: z.string(),
+  title: z.string(),
+  description: z.string().optional(),
+});
+
 // Report Schema
 export const reportSchema = z.object({
   id: z.string(),
@@ -125,6 +139,7 @@ export const workflowPhaseEnum = pgEnum('workflow_phase', ['Detection', 'Scoping
 export const workflowStatusEnum = pgEnum('workflow_status', ['Active', 'Completed', 'Paused']);
 export const userRoleEnum = pgEnum('user_role', ['Analyst', 'Manager', 'Client']);
 export const mitreStatusEnum = pgEnum('mitre_status', ['Active', 'Detected', 'Mitigated', 'Monitored']);
+export const incidentStatusEnum = pgEnum('incident_status', ['Open', 'In Progress', 'Contained', 'Resolved', 'Closed']);
 
 // Tables
 export const alerts = pgTable('alerts', {
@@ -178,6 +193,19 @@ export const workflow_sessions = pgTable('workflow_sessions', {
   user_role: userRoleEnum('user_role').notNull(),
 });
 
+export const incidents = pgTable('incidents', {
+  id: varchar('id').primaryKey().default(sql`gen_random_uuid()`),
+  alert_id: varchar('alert_id').notNull(),
+  playbook_id: varchar('playbook_id'),
+  status: incidentStatusEnum('status').notNull().default('Open'),
+  severity: severityEnum('severity').notNull(),
+  owner: varchar('owner'),
+  created_at: timestamp('created_at').notNull().defaultNow(),
+  updated_at: timestamp('updated_at').notNull().defaultNow(),
+  title: varchar('title').notNull(),
+  description: text('description'),
+});
+
 export const reports = pgTable('reports', {
   id: varchar('id').primaryKey().default(sql`gen_random_uuid()`),
   session_id: varchar('session_id').notNull(),
@@ -191,12 +219,30 @@ export const reports = pgTable('reports', {
 // Relations
 export const alertsRelations = relations(alerts, ({ many }) => ({
   workflow_sessions: many(workflow_sessions),
+  incidents: many(incidents),
+}));
+
+export const incidentsRelations = relations(incidents, ({ one, many }) => ({
+  alert: one(alerts, {
+    fields: [incidents.alert_id],
+    references: [alerts.id],
+  }),
+  playbook: one(playbooks, {
+    fields: [incidents.playbook_id],
+    references: [playbooks.id],
+  }),
+  workflow_sessions: many(workflow_sessions),
+  reports: many(reports),
 }));
 
 export const workflowSessionsRelations = relations(workflow_sessions, ({ one, many }) => ({
   alert: one(alerts, {
     fields: [workflow_sessions.alert_id],
     references: [alerts.id],
+  }),
+  incident: one(incidents, {
+    fields: [workflow_sessions.alert_id],
+    references: [incidents.alert_id],
   }),
   reports: many(reports),
 }));
@@ -220,6 +266,7 @@ export const insertAlertSchema = createInsertSchema(alerts);
 export const insertEndpointSchema = createInsertSchema(endpoints);
 export const insertLogSchema = createInsertSchema(logs);
 export const insertPlaybookSchema = createInsertSchema(playbooks);
+export const insertIncidentSchema = createInsertSchema(incidents);
 export const insertWorkflowSessionSchema = createInsertSchema(workflow_sessions);
 export const insertReportSchema = createInsertSchema(reports);
 
@@ -232,6 +279,8 @@ export type LogEntry = typeof logs.$inferSelect;
 export type InsertLogEntry = typeof logs.$inferInsert;
 export type Playbook = typeof playbooks.$inferSelect;
 export type InsertPlaybook = typeof playbooks.$inferInsert;
+export type Incident = typeof incidents.$inferSelect;
+export type InsertIncident = typeof incidents.$inferInsert;
 export type WorkflowSession = typeof workflow_sessions.$inferSelect;
 export type InsertWorkflowSession = typeof workflow_sessions.$inferInsert;
 export type Report = typeof reports.$inferSelect;

@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Shield, User } from "lucide-react";
 import { useState } from "react";
-import NewSimulationDialog from "@/components/NewSimulationDialog";
+import CreateIncidentDialog from "@/components/CreateIncidentDialog";
 
 interface NavbarProps {
   userRole: "Analyst" | "Manager" | "Client";
@@ -9,7 +9,7 @@ interface NavbarProps {
 }
 
 export default function Navbar({ userRole, onRoleChange }: NavbarProps) {
-  const [showNewSimulationDialog, setShowNewSimulationDialog] = useState(false);
+  const [showCreateIncidentDialog, setShowCreateIncidentDialog] = useState(false);
 
   return (
     <nav className="bg-card border-b border-border px-6 py-4">
@@ -40,16 +40,16 @@ export default function Navbar({ userRole, onRoleChange }: NavbarProps) {
         
         <div className="flex items-center space-x-4">
           <Button 
-            onClick={() => setShowNewSimulationDialog(true)}
+            onClick={() => setShowCreateIncidentDialog(true)}
             className="bg-primary hover:bg-primary/90 text-primary-foreground"
-            data-testid="new-simulation-btn"
+            data-testid="create-incident-btn"
           >
-            New Simulation
+            Create Incident
           </Button>
           
-          <NewSimulationDialog 
-            open={showNewSimulationDialog}
-            onOpenChange={setShowNewSimulationDialog}
+          <CreateIncidentDialog 
+            open={showCreateIncidentDialog}
+            onOpenChange={setShowCreateIncidentDialog}
           />
           <div className="w-8 h-8 bg-muted rounded-full flex items-center justify-center">
             <User className="w-4 h-4" />

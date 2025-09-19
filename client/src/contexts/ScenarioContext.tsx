@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, ReactNode } from 'react';
 
-export interface Scenario {
+export interface Playbook {
   id: 'perimeter-breach' | 'internal-reconnaissance' | 'lateral-movement';
   name: string;
   description: string;
@@ -11,7 +11,7 @@ export interface Scenario {
   mitreTechniques: string[];
 }
 
-export const scenarios: Record<string, Scenario> = {
+export const playbooks: Record<string, Playbook> = {
   'perimeter-breach': {
     id: 'perimeter-breach',
     name: 'Perimeter Breach',
@@ -44,36 +44,51 @@ export const scenarios: Record<string, Scenario> = {
   }
 };
 
-interface ScenarioContextType {
-  selectedScenario: Scenario | null;
-  setSelectedScenario: (scenario: Scenario) => void;
-  resetScenario: () => void;
+interface PlaybookContextType {
+  selectedPlaybook: Playbook | null;
+  setSelectedPlaybook: (playbook: Playbook) => void;
+  resetPlaybook: () => void;
 }
 
-const ScenarioContext = createContext<ScenarioContextType | undefined>(undefined);
+const PlaybookContext = createContext<PlaybookContextType | undefined>(undefined);
 
-export function ScenarioProvider({ children }: { children: ReactNode }) {
-  const [selectedScenario, setSelectedScenario] = useState<Scenario | null>(null);
+export function PlaybookProvider({ children }: { children: ReactNode }) {
+  const [selectedPlaybook, setSelectedPlaybook] = useState<Playbook | null>(null);
 
-  const resetScenario = () => {
-    setSelectedScenario(null);
+  const resetPlaybook = () => {
+    setSelectedPlaybook(null);
   };
 
   return (
-    <ScenarioContext.Provider value={{
-      selectedScenario,
-      setSelectedScenario,
-      resetScenario
+    <PlaybookContext.Provider value={{
+      selectedPlaybook,
+      setSelectedPlaybook,
+      resetPlaybook
     }}>
       {children}
-    </ScenarioContext.Provider>
+    </PlaybookContext.Provider>
   );
 }
 
-export function useScenario() {
-  const context = useContext(ScenarioContext);
+export function usePlaybook() {
+  const context = useContext(PlaybookContext);
   if (context === undefined) {
-    throw new Error('useScenario must be used within a ScenarioProvider');
+    throw new Error('usePlaybook must be used within a PlaybookProvider');
   }
   return context;
 }
+
+// Backward compatibility exports during transition
+export type Scenario = Playbook;
+export const scenarios = playbooks;
+
+export function useScenario() {
+  const context = usePlaybook();
+  return {
+    selectedScenario: context.selectedPlaybook,
+    setSelectedScenario: context.setSelectedPlaybook,
+    resetScenario: context.resetPlaybook
+  };
+}
+
+export const ScenarioProvider = PlaybookProvider;

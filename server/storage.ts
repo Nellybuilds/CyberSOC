@@ -1,5 +1,5 @@
-import type { Alert, Endpoint, LogEntry, Playbook, WorkflowSession, Report, InsertAlert, InsertEndpoint, InsertLogEntry, InsertPlaybook, InsertWorkflowSession, InsertReport } from "@shared/schema";
-import { alerts, endpoints, logs, playbooks, workflow_sessions, reports } from "@shared/schema";
+import type { Alert, Endpoint, LogEntry, Playbook, WorkflowSession, Report, Incident, InsertAlert, InsertEndpoint, InsertLogEntry, InsertPlaybook, InsertWorkflowSession, InsertReport, InsertIncident } from "@shared/schema";
+import { alerts, endpoints, logs, playbooks, workflow_sessions, reports, incidents } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, asc } from "drizzle-orm";
 import { randomUUID } from "crypto";
@@ -23,6 +23,12 @@ export interface IStorage {
   // Playbooks
   getPlaybook(id: string): Promise<Playbook | undefined>;
   
+  // Incidents
+  createIncident(incident: Omit<Incident, "id" | "created_at" | "updated_at">): Promise<Incident>;
+  getIncidents(filters?: { status?: string; owner?: string; severity?: string }): Promise<Incident[]>;
+  getIncident(id: string): Promise<Incident | undefined>;
+  updateIncident(id: string, updates: Partial<Incident>): Promise<Incident | undefined>;
+  
   // Workflow Sessions
   createWorkflowSession(session: Omit<WorkflowSession, "id">): Promise<WorkflowSession>;
   getWorkflowSession(id: string): Promise<WorkflowSession | undefined>;
@@ -30,7 +36,7 @@ export interface IStorage {
   updateWorkflowSession(id: string, updates: Partial<WorkflowSession>): Promise<WorkflowSession | undefined>;
   clearAllWorkflowSessions(): Promise<void>;
   resetEndpointsToInitialState(): Promise<void>;
-  applyScenario(scenario: string): Promise<{ activeAlertId: string; scenarioName: string }>;
+  createIncidentFromType(incidentType: string): Promise<{ incident: Incident; activeAlertId: string; incidentName: string }>;
 
   // Reports
   generateReport(sessionId: string): Promise<Report>;
@@ -325,6 +331,59 @@ export class DatabaseStorage implements IStorage {
     return playbook || undefined;
   }
 
+  // Incident methods
+  async createIncident(incident: Omit<Incident, "id" | "created_at" | "updated_at">): Promise<Incident> {
+    const incidentData = {
+      ...incident,
+      id: randomUUID(),
+      created_at: new Date(),
+      updated_at: new Date(),
+    };
+
+    const [createdIncident] = await db
+      .insert(incidents)
+      .values(incidentData)
+      .returning();
+    
+    return createdIncident;
+  }
+
+  async getIncidents(filters?: { status?: string; owner?: string; severity?: string }): Promise<Incident[]> {
+    let query = db.select().from(incidents);
+
+    if (filters) {
+      const conditions = [];
+      if (filters.status) conditions.push(eq(incidents.status, filters.status as any));
+      if (filters.owner) conditions.push(eq(incidents.owner, filters.owner));
+      if (filters.severity) conditions.push(eq(incidents.severity, filters.severity as any));
+      
+      if (conditions.length > 0) {
+        query = query.where(and(...conditions));
+      }
+    }
+
+    return query.orderBy(desc(incidents.created_at));
+  }
+
+  async getIncident(id: string): Promise<Incident | undefined> {
+    const [incident] = await db
+      .select()
+      .from(incidents)
+      .where(eq(incidents.id, id));
+    
+    return incident;
+  }
+
+  async updateIncident(id: string, updates: Partial<Incident>): Promise<Incident | undefined> {
+    const [updatedIncident] = await db
+      .update(incidents)
+      .set({ ...updates, updated_at: new Date() })
+      .where(eq(incidents.id, id))
+      .returning();
+    
+    return updatedIncident;
+  }
+
   async createWorkflowSession(session: Omit<WorkflowSession, "id">): Promise<WorkflowSession> {
     const [newSession] = await db
       .insert(workflow_sessions)
@@ -404,36 +463,42 @@ export class DatabaseStorage implements IStorage {
     await db.update(endpoints).set({ status: "Normal" });
   }
 
-  async applyScenario(scenario: string): Promise<{ activeAlertId: string; scenarioName: string }> {
-    // Map scenarios to alert IDs and their configurations
-    const scenarioMap = {
+  async createIncidentFromType(incidentType: string): Promise<{ incident: Incident; activeAlertId: string; incidentName: string }> {
+    // Map incident types to alert IDs and their configurations
+    const incidentTypeMap = {
       "ransomware": {
         alertId: "alert-001",
         name: "Ransomware Attack",
+        playbookId: "perimeter-breach", // Link to appropriate playbook
         affectedEndpoints: ["endpoint-01", "endpoint-02", "endpoint-03", "endpoint-04", "endpoint-05"],
-        status: "New" as const
+        status: "New" as const,
+        severity: "Critical" as const
       },
       "credential-compromise": {
         alertId: "alert-004", 
         name: "Credential Compromise",
+        playbookId: "internal-reconnaissance",
         affectedEndpoints: ["endpoint-03", "endpoint-06", "endpoint-07"],
-        status: "New" as const
+        status: "New" as const,
+        severity: "Critical" as const
       },
       "phishing": {
         alertId: "alert-005",
-        name: "Phishing Campaign", 
+        name: "Phishing Campaign",
+        playbookId: "lateral-movement", 
         affectedEndpoints: ["endpoint-01", "endpoint-02"],
-        status: "New" as const
+        status: "New" as const,
+        severity: "High" as const
       }
     };
     
-    const config = scenarioMap[scenario as keyof typeof scenarioMap];
-    if (!config) throw new Error(`Unknown scenario: ${scenario}`);
+    const config = incidentTypeMap[incidentType as keyof typeof incidentTypeMap];
+    if (!config) throw new Error(`Unknown incident type: ${incidentType}`);
     
     // Reset all endpoints to Normal first
     await db.update(endpoints).set({ status: "Normal" });
     
-    // Set affected endpoints for this scenario
+    // Set affected endpoints for this incident
     if (config.affectedEndpoints.length > 0) {
       await db.update(endpoints)
         .set({ status: "Affected" })
@@ -455,7 +520,17 @@ export class DatabaseStorage implements IStorage {
       })
       .where(eq(alerts.id, config.alertId));
     
-    return { activeAlertId: config.alertId, scenarioName: config.name };
+    // Create the incident record
+    const incident = await this.createIncident({
+      alert_id: config.alertId,
+      playbook_id: config.playbookId,
+      status: "Open",
+      severity: config.severity,
+      title: config.name,
+      description: `Incident created from ${config.name} detection`,
+    });
+    
+    return { incident, activeAlertId: config.alertId, incidentName: config.name };
   }
 }
 

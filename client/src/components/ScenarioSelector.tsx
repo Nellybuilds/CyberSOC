@@ -33,12 +33,12 @@ export default function ScenarioSelector() {
             <Shield className="w-16 h-16 text-primary mr-4" />
             <div>
               <h1 className="text-4xl font-bold">Incident Response Playbook</h1>
-              <p className="text-xl text-muted-foreground mt-2">Cybersecurity Training Simulator</p>
+              <p className="text-xl text-muted-foreground mt-2">Assistant</p>
             </div>
           </div>
           <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
-            Select a network intrusion scenario to begin your guided incident response training. 
-            Each scenario features unique evidence types, attack vectors, and response priorities.
+            Select an incident response playbook to guide your investigation and containment activities. 
+            Each playbook provides structured procedures for specific attack patterns and threat vectors.
           </p>
         </div>
 
@@ -136,7 +136,7 @@ export default function ScenarioSelector() {
                       className="w-full mt-6 group-hover:bg-primary group-hover:text-primary-foreground transition-colors"
                       data-testid={`select-scenario-${scenario.id}`}
                     >
-                      Start Investigation
+                      Apply Playbook
                       <ArrowRight className="w-4 h-4 ml-2" />
                     </Button>
                   </div>
@@ -148,7 +148,7 @@ export default function ScenarioSelector() {
 
         <div className="text-center mt-12">
           <p className="text-sm text-muted-foreground">
-            Each scenario is based on real-world attack patterns and follows NIST Cybersecurity Framework guidelines
+            All playbooks are based on industry best practices and follow NIST Cybersecurity Framework guidelines
           </p>
         </div>
       </div>
