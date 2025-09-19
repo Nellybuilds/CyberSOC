@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { X, Shield, BookOpen, Clock, Activity } from "lucide-react";
+import { X, Shield, BookOpen, Clock, Activity, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { useScenario } from "@/contexts/ScenarioContext";
 import type { PlaybookNode } from "@shared/schema";
 
 interface AIAssistantPanelProps {
@@ -23,8 +24,11 @@ export default function AIAssistantPanel({
   const [sessionTime, setSessionTime] = useState("00:15:32");
   const [actionsTaken, setActionsTaken] = useState(3);
   const [completion, setCompletion] = useState(25);
+  const [selectedRole, setSelectedRole] = useState<'analyst' | 'manager' | 'client'>('analyst');
+  
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { selectedScenario } = useScenario();
 
   const executeActionMutation = useMutation({
     mutationFn: async (action: string) => {
@@ -86,6 +90,40 @@ export default function AIAssistantPanel({
     },
   });
 
+  // AI-powered recommendations query
+  const { data: aiRecommendations, isLoading: loadingAI, refetch: refreshAI } = useQuery({
+    queryKey: ['/api/ai-assistant', selectedScenario?.id, selectedRole],
+    queryFn: async () => {
+      if (!selectedScenario) return null;
+      
+      const response = await apiRequest(
+        'POST',
+        '/api/ai-assistant',
+        {
+          scenario: selectedScenario.id,
+          evidence: selectedScenario.evidenceTypes,
+          severity: selectedScenario.threatLevel === 'Critical' ? 'critical' : 'high',
+          affected_systems: [`HU-${selectedScenario.name.toUpperCase().replace(' ', '-')}-01`, `HU-${selectedScenario.name.toUpperCase().replace(' ', '-')}-02`],
+          role: selectedRole
+        }
+      );
+      const data = await response.json();
+      return data.recommendations as AIRecommendation[];
+    },
+    enabled: !!selectedScenario
+  });
+
+  interface AIRecommendation {
+    action: string;
+    description: string;
+    priority: number;
+    source: string;
+    mitre_mapping?: {
+      technique_id: string;
+      technique_name: string;
+    };
+  }
+
   if (isMinimized) {
     return (
       <div className="fixed bottom-4 right-4 bg-card border border-border rounded-lg p-4 shadow-lg">
@@ -107,18 +145,70 @@ export default function AIAssistantPanel({
         <h2 className="text-lg font-semibold flex items-center">
           <Shield className="w-5 h-5 mr-2 text-primary" />
           AI Assistant
+          {loadingAI && <RefreshCw className="w-4 h-4 ml-2 animate-spin" />}
         </h2>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setIsMinimized(true)}
-          data-testid="minimize-ai-panel"
-        >
-          <X className="w-4 h-4" />
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => refreshAI()}
+            disabled={loadingAI}
+            data-testid="refresh-ai"
+          >
+            <RefreshCw className="w-4 h-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setIsMinimized(true)}
+            data-testid="minimize-ai-panel"
+          >
+            <X className="w-4 h-4" />
+          </Button>
+        </div>
       </div>
       
       <div className="space-y-4">
+        {/* Scenario Indicator */}
+        {selectedScenario && (
+          <div className="bg-info/10 border border-info/20 rounded-lg p-4">
+            <h4 className="font-medium mb-2 text-info flex items-center">
+              <BookOpen className="w-4 h-4 mr-2" />
+              Active Playbook: {selectedScenario.name}
+            </h4>
+            <p className="text-sm text-muted-foreground mb-2">
+              {selectedScenario.description}
+            </p>
+            <div className="flex items-center gap-2 text-xs">
+              <Badge variant={selectedScenario.threatLevel === 'Critical' ? 'destructive' : 'secondary'}>
+                {selectedScenario.threatLevel}
+              </Badge>
+              <span className="text-muted-foreground">
+                {selectedScenario.affectedSystemsCount} systems affected
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* Role Selector */}
+        <div className="bg-card border border-border rounded-lg p-4">
+          <h4 className="font-medium mb-2">Your Role</h4>
+          <div className="flex gap-2">
+            {(['analyst', 'manager', 'client'] as const).map((role) => (
+              <Button
+                key={role}
+                variant={selectedRole === role ? "default" : "outline"}
+                size="sm"
+                onClick={() => setSelectedRole(role)}
+                className="capitalize"
+                data-testid={`role-${role}`}
+              >
+                {role}
+              </Button>
+            ))}
+          </div>
+        </div>
+
         {/* Current Step */}
         <div className="bg-primary/10 border border-primary/20 rounded-lg p-4">
           <div className="flex items-start space-x-3">
@@ -127,70 +217,68 @@ export default function AIAssistantPanel({
             </div>
             <div>
               <h4 className="font-medium mb-2">
-                {currentNode?.title || "Initial Detection Complete"}
+                AI-Powered Incident Response
               </h4>
               <p className="text-sm text-muted-foreground mb-3">
-                {currentNode?.ai_prompt || 
-                  "Critical alert indicates ransomware activity. The AI assistant recommends launching the guided response playbook immediately."
+                {selectedScenario 
+                  ? `Real-time analysis of ${selectedScenario.name.toLowerCase()} with role-based recommendations following NIST and SANS frameworks.`
+                  : "Select a scenario to begin AI-powered incident response guidance."
                 }
               </p>
-              {currentNode?.playbook_reference && (
-                <div className="text-xs text-muted-foreground mb-3">
-                  <span className="font-medium">Reference:</span> {currentNode.playbook_reference}
-                </div>
-              )}
             </div>
           </div>
         </div>
         
-        {/* Recommended Actions */}
+        {/* AI Recommendations */}
         <div className="bg-card border border-border rounded-lg p-4">
-          <h4 className="font-medium mb-3">Recommended Actions</h4>
-          <div className="space-y-2">
-            <Button
-              onClick={() => executeActionMutation.mutate("Isolate All Endpoints")}
-              disabled={executeActionMutation.isPending}
-              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground p-3 text-sm font-medium text-left"
-              data-testid="isolate-all-action"
-            >
-              <div className="flex items-center">
-                🔒 {executeActionMutation.isPending ? "Isolating..." : "Isolate All 5 Endpoints"}
-              </div>
-              <div className="text-xs mt-1 opacity-80">Immediately quarantine affected systems</div>
-            </Button>
-            
-            <Button
-              onClick={() => executeActionMutation.mutate("Lock User Accounts")}
-              disabled={executeActionMutation.isPending}
-              className="w-full bg-warning hover:bg-warning/90 text-warning-foreground p-3 text-sm font-medium text-left"
-              data-testid="lock-accounts-action"
-            >
-              <div>🔐 Lock User Accounts</div>
-              <div className="text-xs mt-1 opacity-80">Prevent lateral movement via compromised credentials</div>
-            </Button>
-            
-            <Button
-              onClick={() => executeActionMutation.mutate("Analyze Network Traffic")}
-              disabled={executeActionMutation.isPending}
-              variant="secondary"
-              className="w-full p-3 text-sm font-medium text-left"
-              data-testid="analyze-traffic-action"
-            >
-              <div>📊 Analyze Network Traffic</div>
-              <div className="text-xs mt-1 opacity-80">Investigate command & control communications</div>
-            </Button>
-            
-            <Button
-              onClick={() => executeActionMutation.mutate("Skip to Investigation")}
-              disabled={executeActionMutation.isPending}
-              variant="outline"
-              className="w-full p-3 text-sm font-medium text-left"
-              data-testid="skip-investigation-action"
-            >
-              <div>⏭️ Skip to Investigation Phase</div>
-              <div className="text-xs mt-1 opacity-80">Continue without containment (not recommended)</div>
-            </Button>
-          </div>
+          <h4 className="font-medium mb-3">AI Recommendations</h4>
+          
+          {loadingAI ? (
+            <div className="space-y-2">
+              <div className="animate-pulse bg-muted h-16 rounded"></div>
+              <div className="animate-pulse bg-muted h-16 rounded"></div>
+              <div className="animate-pulse bg-muted h-16 rounded"></div>
+            </div>
+          ) : selectedScenario ? (
+            <div className="space-y-2">
+              {aiRecommendations?.map((rec, index) => (
+                <Button
+                  key={index}
+                  onClick={() => executeActionMutation.mutate(rec.action)}
+                  disabled={executeActionMutation.isPending}
+                  variant={rec.priority === 1 ? "default" : rec.priority === 2 ? "secondary" : "outline"}
+                  className="w-full p-3 text-sm font-medium text-left flex-col items-start h-auto"
+                  data-testid={`ai-action-${index}`}
+                >
+                  <div className="flex items-center justify-between w-full">
+                    <span>🔒 {rec.action}</span>
+                    <Badge variant={rec.priority === 1 ? "destructive" : "secondary"} className="text-xs">
+                      P{rec.priority}
+                    </Badge>
+                  </div>
+                  <div className="text-xs mt-1 opacity-80">{rec.description}</div>
+                  <div className="text-xs mt-1 text-blue-400">
+                    📚 Source: {rec.source}
+                  </div>
+                  {rec.mitre_mapping && (
+                    <div className="text-xs mt-1 text-orange-400">
+                      🎯 MITRE: {rec.mitre_mapping.technique_id} - {rec.mitre_mapping.technique_name}
+                    </div>
+                  )}
+                </Button>
+              ))}
+              
+              {(!aiRecommendations || aiRecommendations.length === 0) && (
+                <div className="text-center text-muted-foreground py-4">
+                  No AI recommendations available. Try refreshing or check your connection.
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="text-center text-muted-foreground py-4">
+              Please select a scenario to view AI-powered recommendations.
+            </div>
+          )}
         </div>
         
         {/* Playbook Reference */}
