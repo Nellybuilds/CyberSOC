@@ -93,9 +93,9 @@ export default function Dashboard() {
             };
             
             const nodeId = phaseToNodeMap[phaseId];
-            console.log('Mapped to nodeId:', nodeId, 'playbook exists:', !!playbook, 'node exists:', !!playbook?.nodes?.[nodeId]);
+            console.log('Mapped to nodeId:', nodeId, 'playbook exists:', !!playbook, 'node exists:', !!(playbook?.nodes as any)?.[nodeId]);
             
-            if (nodeId && playbook?.nodes?.[nodeId]) {
+            if (nodeId && (playbook?.nodes as any)?.[nodeId]) {
               console.log('Calling advanceWorkflow with:', nodeId);
               advanceWorkflow(nodeId, `Advanced to ${phaseId} phase`);
             } else {

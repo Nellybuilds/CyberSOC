@@ -459,5 +459,5 @@ export class DatabaseStorage implements IStorage {
   }
 }
 
-// Use DatabaseStorage for database-backed persistence
-export const storage = new DatabaseStorage();
+// Use FileStorage for now since JSON files are working
+export const storage = new FileStorage();
