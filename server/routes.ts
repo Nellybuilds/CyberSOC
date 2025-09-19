@@ -1,6 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import { generateIncidentResponse, type IncidentContext } from "./ai-service";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Alerts endpoints
@@ -297,6 +298,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       res.status(500).json({ error: "Failed to advance workflow" });
+    }
+  });
+
+  // AI Assistant endpoint
+  app.post("/api/ai-assistant", async (req, res) => {
+    try {
+      const { scenario, evidence, severity, affected_systems, role } = req.body;
+      
+      // Validate required fields
+      if (!scenario || !evidence || !severity || !affected_systems || !role) {
+        return res.status(400).json({ 
+          error: "Missing required fields: scenario, evidence, severity, affected_systems, role" 
+        });
+      }
+
+      // Validate scenario type
+      const validScenarios = ['perimeter-breach', 'internal-reconnaissance', 'lateral-movement'];
+      if (!validScenarios.includes(scenario)) {
+        return res.status(400).json({ 
+          error: "Invalid scenario. Must be one of: " + validScenarios.join(', ') 
+        });
+      }
+
+      // Validate role
+      const validRoles = ['analyst', 'manager', 'client'];
+      if (!validRoles.includes(role)) {
+        return res.status(400).json({ 
+          error: "Invalid role. Must be one of: " + validRoles.join(', ') 
+        });
+      }
+
+      const incidentContext: IncidentContext = {
+        scenario,
+        evidence: Array.isArray(evidence) ? evidence : [evidence],
+        severity,
+        affected_systems: Array.isArray(affected_systems) ? affected_systems : [affected_systems],
+        role
+      };
+
+      const aiResponse = await generateIncidentResponse(incidentContext);
+      
+      res.json({
+        success: true,
+        scenario,
+        role,
+        ...aiResponse
+      });
+    } catch (error) {
+      console.error('AI assistant error:', error);
+      res.status(500).json({ 
+        error: "Failed to generate AI recommendations",
+        fallback_message: "AI service unavailable. Please use standard incident response procedures."
+      });
     }
   });
 
