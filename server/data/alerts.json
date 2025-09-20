@@ -4,20 +4,35 @@
     "title": "Ransomware Detected on 5 Endpoints",
     "severity": "Critical",
     "status": "New",
-    "timestamp": "2025-01-17T13:01:00Z",
-    "affected_endpoints": ["endpoint-01", "endpoint-02", "endpoint-03", "endpoint-04", "endpoint-05"],
-    "mitre_tactics": ["T1486", "T1059.001"],
+    "timestamp": "2025-09-20T18:16:52.050Z",
+    "affected_endpoints": [
+      "endpoint-01",
+      "endpoint-02",
+      "endpoint-03",
+      "endpoint-04",
+      "endpoint-05"
+    ],
+    "mitre_tactics": [
+      "T1486",
+      "T1059.001"
+    ],
     "description": "Multiple endpoints in the Finance department have been infected with ransomware. File encryption activity detected across network shares."
   },
   {
     "id": "alert-002",
-    "title": "Suspicious PowerShell Activity",
-    "severity": "High",
-    "status": "In Progress",
-    "timestamp": "2025-01-17T12:45:00Z",
-    "affected_endpoints": ["endpoint-06", "endpoint-07"],
-    "mitre_tactics": ["T1059.001", "T1105"],
-    "description": "Abnormal PowerShell execution patterns detected, potentially related to payload delivery."
+    "title": "Critical Data Breach Detected",
+    "severity": "Critical",
+    "status": "New",
+    "timestamp": "2025-09-20T18:17:20.906Z",
+    "affected_endpoints": [
+      "endpoint-06",
+      "endpoint-07"
+    ],
+    "mitre_tactics": [
+      "T1059.001",
+      "T1105"
+    ],
+    "description": "Unauthorized access to sensitive customer database detected"
   },
   {
     "id": "alert-004",
@@ -25,8 +40,15 @@
     "severity": "Critical",
     "status": "New",
     "timestamp": "2025-09-17T14:55:43Z",
-    "affected_endpoints": ["endpoint-03", "endpoint-06", "endpoint-07"],
-    "mitre_tactics": ["T1078", "T1021.001"],
+    "affected_endpoints": [
+      "endpoint-03",
+      "endpoint-06",
+      "endpoint-07"
+    ],
+    "mitre_tactics": [
+      "T1078",
+      "T1021.001"
+    ],
     "description": "Suspicious login activity detected from multiple locations using compromised credentials with evidence of lateral movement."
   },
   {
@@ -35,8 +57,14 @@
     "severity": "High",
     "status": "New",
     "timestamp": "2025-09-17T09:30:00Z",
-    "affected_endpoints": ["endpoint-01", "endpoint-02"],
-    "mitre_tactics": ["T1566.001", "T1204.001"],
+    "affected_endpoints": [
+      "endpoint-01",
+      "endpoint-02"
+    ],
+    "mitre_tactics": [
+      "T1566.001",
+      "T1204.001"
+    ],
     "description": "Multiple users have received and potentially clicked on malicious phishing emails containing credential harvesting links."
   }
 ]
