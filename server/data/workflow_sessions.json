@@ -1,1 +1,64 @@
-[]
+[
+  {
+    "alert_id": "alert-001",
+    "current_node": "scoping_phase",
+    "completed_nodes": [
+      "detection_phase"
+    ],
+    "actions_taken": [
+      {
+        "timestamp": "2025-09-20T18:00:03.807Z",
+        "action": "Advanced to Scoping phase",
+        "details": {
+          "node": "scoping_phase"
+        }
+      }
+    ],
+    "status": "Active",
+    "user_role": "Analyst",
+    "started_at": "2025-09-20T18:00:03.807Z",
+    "id": "e513f818-21ad-4ae3-b93d-a59834cb83d2"
+  },
+  {
+    "alert_id": "alert-001",
+    "current_node": "detection_phase",
+    "completed_nodes": [
+      "detection_phase",
+      "scoping_phase"
+    ],
+    "actions_taken": [
+      {
+        "timestamp": "2025-09-20T18:00:07.036Z",
+        "action": "Advanced to Detection phase",
+        "details": {
+          "node": "detection_phase"
+        }
+      }
+    ],
+    "status": "Active",
+    "user_role": "Analyst",
+    "started_at": "2025-09-20T18:00:07.036Z",
+    "id": "6206cfb1-60c6-4482-a52f-6c9e9504b3e8"
+  },
+  {
+    "alert_id": "alert-001",
+    "current_node": "scoping_phase",
+    "completed_nodes": [
+      "detection_phase",
+      "scoping_phase"
+    ],
+    "actions_taken": [
+      {
+        "timestamp": "2025-09-20T18:00:07.556Z",
+        "action": "Advanced to Scoping phase",
+        "details": {
+          "node": "scoping_phase"
+        }
+      }
+    ],
+    "status": "Active",
+    "user_role": "Analyst",
+    "started_at": "2025-09-20T18:00:07.556Z",
+    "id": "aec56558-cf4c-4abf-be32-71aba31c8d7e"
+  }
+]

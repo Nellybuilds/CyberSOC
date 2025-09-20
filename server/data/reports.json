@@ -1,0 +1,37 @@
+[
+  {
+    "id": "ddc5bb69-0d7f-485f-ba64-311d36accd58",
+    "session_id": "current",
+    "generated_at": "2025-09-20T18:10:27.422Z",
+    "incident_summary": {
+      "title": "Ransomware Attack - Financial Department",
+      "severity": "Critical",
+      "affected_assets": 5,
+      "response_time": "15 minutes",
+      "status": "In Progress"
+    },
+    "timeline": [
+      {
+        "timestamp": "2025-01-17T13:01:00Z",
+        "phase": "Detection",
+        "action": "Alert Generated",
+        "details": "Ransomware detected on 5 endpoints"
+      },
+      {
+        "timestamp": "2025-01-17T13:05:00Z",
+        "phase": "Scoping",
+        "action": "Impact Assessment",
+        "details": "Identified affected systems and users"
+      }
+    ],
+    "mitre_techniques": [
+      "T1486",
+      "T1059.001"
+    ],
+    "recommendations": [
+      "Implement regular backup verification procedures",
+      "Enhance endpoint detection capabilities",
+      "Conduct ransomware response training"
+    ]
+  }
+]

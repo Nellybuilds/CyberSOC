@@ -75,50 +75,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Playbooks
-  app.get("/api/playbooks/:id", async (req, res) => {
+  // Playbook endpoints
+  app.get("/api/alerts/:id/playbook", async (req, res) => {
     try {
-      const playbook = await storage.getPlaybook(req.params.id);
-      if (!playbook) {
-        return res.status(404).json({ error: "Playbook not found" });
+      const { id } = req.params;
+      const alert = await storage.getAlert(id);
+      if (!alert) {
+        return res.status(404).json({ error: "Alert not found" });
       }
+
+      // Mock playbook data based on alert type
+      const playbookMap = {
+        "alert-001": { id: "ransomware-response", name: "Ransomware Response", phase: "containment" },
+        "alert-004": { id: "credential-compromise-response", name: "Credential Compromise Response", phase: "investigation" },
+        "alert-005": { id: "phishing-response", name: "Phishing Response", phase: "detection" }
+      };
+
+      const playbook = playbookMap[id as keyof typeof playbookMap] || { 
+        id: "general-response", 
+        name: "General Incident Response", 
+        phase: "detection" 
+      };
+
       res.json(playbook);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch playbook" });
     }
   });
 
-  // Get playbook for specific alert type
-  app.get("/api/alerts/:alertId/playbook", async (req, res) => {
-    try {
-      const alert = await storage.getAlert(req.params.alertId);
-      if (!alert) {
-        return res.status(404).json({ error: "Alert not found" });
-      }
-
-      // Map alert title to playbook ID
-      let playbookId = "ransomware-response"; // default
-      if (alert.title.toLowerCase().includes("phishing")) {
-        playbookId = "phishing-response";
-      } else if (alert.title.toLowerCase().includes("credential")) {
-        playbookId = "credential-compromise-response";
-      }
-
-      const playbook = await storage.getPlaybook(playbookId);
-      if (!playbook) {
-        return res.status(404).json({ error: "Playbook not found" });
-      }
-      res.json(playbook);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch playbook for alert" });
-    }
-  });
-
   // Workflow sessions
   app.get("/api/workflow-sessions/:alertId", async (req, res) => {
     try {
-      const { alertId } = req.params;
-      const session = await storage.getWorkflowSessionByAlertId(alertId);
+      const session = await storage.getWorkflowSessionByAlertId(req.params.alertId);
       if (!session) {
         return res.status(404).json({ error: "No workflow session found for this alert" });
       }
@@ -197,14 +185,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Clear all existing workflow sessions for fresh start
       await storage.clearAllWorkflowSessions();
       
-      // Apply the selected scenario
-      const scenarioResult = await storage.createIncidentFromType(scenario);
+      // Create incident from the selected type
+      const incidentResult = await storage.createIncidentFromType(scenario);
       
       res.json({ 
         success: true, 
         scenario,
-        activeAlertId: scenarioResult.activeAlertId,
-        message: `${scenarioResult.incidentName} incident created successfully.` 
+        activeAlertId: incidentResult.activeAlertId,
+        message: `${incidentResult.incidentName} incident created successfully.` 
       });
     } catch (error) {
       console.error("Failed to reset simulation:", error);
@@ -219,12 +207,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const report = await storage.generateReport(sessionId);
       
       if (format === 'pdf') {
-        const { PDFGenerator } = await import('./pdf-generator');
-        const pdfBuffer = await PDFGenerator.generatePDF({ userRole, report });
-        
-        res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `attachment; filename="incident-report-${new Date().toISOString().split('T')[0]}.pdf"`);
-        res.send(pdfBuffer);
+        try {
+          const { PDFGenerator } = await import('./pdf-generator');
+          const pdfBuffer = await PDFGenerator.generatePDF({ userRole, report });
+          
+          res.setHeader('Content-Type', 'application/pdf');
+          res.setHeader('Content-Disposition', `attachment; filename="incident-report-${new Date().toISOString().split('T')[0]}.pdf"`);
+          res.send(pdfBuffer);
+        } catch (pdfError) {
+          // If PDF generation fails, return JSON instead
+          console.warn('PDF generation failed, returning JSON report:', pdfError);
+          res.json(report);
+        }
       } else {
         // Return JSON for other formats (json, txt)
         res.json(report);
@@ -232,6 +226,78 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Report generation error:', error);
       res.status(500).json({ error: "Failed to generate report" });
+    }
+  });
+
+  // Simulation Control Endpoints
+  app.post("/api/simulation/trigger-alert", async (req, res) => {
+    try {
+      const { alertType, timestamp } = req.body;
+      
+      const alertMap = {
+        "critical-breach": {
+          title: "Critical Data Breach Detected",
+          severity: "Critical",
+          description: "Unauthorized access to sensitive customer database detected",
+          affectedEndpoints: ["endpoint-01", "endpoint-02", "endpoint-03"]
+        },
+        "ransomware-outbreak": {
+          title: "Ransomware Outbreak in Progress",
+          severity: "Critical",
+          description: "Multiple endpoints showing ransomware encryption activity",
+          affectedEndpoints: ["endpoint-01", "endpoint-04", "endpoint-05"]
+        },
+        "credential-theft": {
+          title: "Credential Theft Attempt",
+          severity: "High", 
+          description: "Suspicious authentication attempts from unknown locations",
+          affectedEndpoints: ["endpoint-02", "endpoint-06"]
+        },
+        "phishing-campaign": {
+          title: "Active Phishing Campaign",
+          severity: "High",
+          description: "Mass phishing emails targeting employee credentials", 
+          affectedEndpoints: ["endpoint-01", "endpoint-03"]
+        }
+      };
+      
+      const alertConfig = alertMap[alertType as keyof typeof alertMap];
+      if (!alertConfig) {
+        return res.status(400).json({ error: "Invalid alert type" });
+      }
+      
+      // Create a new simulated alert by updating existing alerts
+      const alerts = await storage.getAlerts();
+      const targetAlert = alerts.find(alert => alert.status !== "New");
+      
+      if (targetAlert) {
+        // Update an existing alert to simulate a new threat
+        await storage.updateAlert(targetAlert.id, {
+          title: alertConfig.title,
+          severity: alertConfig.severity as any,
+          status: "New" as any,
+          timestamp: new Date(),
+          description: alertConfig.description
+        });
+        
+        // Update affected endpoints
+        for (const endpointId of alertConfig.affectedEndpoints) {
+          await storage.updateEndpoint(endpointId, { status: "Affected" });
+        }
+      }
+      
+      res.json({
+        success: true,
+        alertType,
+        alertTitle: alertConfig.title,
+        severity: alertConfig.severity,
+        description: alertConfig.description,
+        timestamp,
+        affectedEndpoints: alertConfig.affectedEndpoints.length
+      });
+    } catch (error) {
+      console.error("Simulation trigger error:", error);
+      res.status(500).json({ error: "Failed to trigger simulation alert" });
     }
   });
 
@@ -246,14 +312,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // AI Recommendation Actions
   app.post("/api/actions/isolate-all", async (req, res) => {
     try {
       const { endpointIds } = req.body;
-      const promises = endpointIds.map((id: string) => 
-        storage.updateEndpoint(id, { status: "Isolated" })
-      );
-      await Promise.all(promises);
-      res.json({ success: true, message: "All endpoints isolated" });
+      const results = [];
+      
+      for (const endpointId of endpointIds) {
+        const endpoint = await storage.updateEndpoint(endpointId, { status: "Isolated" });
+        if (endpoint) results.push(endpoint);
+      }
+      
+      res.json({ success: true, isolatedEndpoints: results.length, endpoints: results });
     } catch (error) {
       res.status(500).json({ error: "Failed to isolate endpoints" });
     }
@@ -261,43 +331,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/actions/lock-accounts", async (req, res) => {
     try {
-      // Simulate locking all user accounts to prevent lateral movement
       res.json({ 
         success: true, 
-        message: "All user accounts have been locked",
-        lockedAccounts: 15
+        action: "accounts_locked",
+        affected_accounts: 3,
+        message: "User accounts locked as security precaution"
       });
     } catch (error) {
-      res.status(500).json({ error: "Failed to lock accounts" });
-    }
-  });
-
-  app.post("/api/actions/reconnect-endpoint", async (req, res) => {
-    try {
-      const { endpointId } = req.body;
-      const endpoint = await storage.updateEndpoint(endpointId, { status: "Normal" });
-      res.json({ success: true, endpoint });
-    } catch (error) {
-      res.status(500).json({ error: "Failed to reconnect endpoint" });
+      res.status(500).json({ error: "Failed to lock user accounts" });
     }
   });
 
   app.post("/api/actions/analyze-traffic", async (req, res) => {
     try {
       const { alertId } = req.body;
-      // Simulate network traffic analysis
+      
       const analysisResults = {
-        suspiciousConnections: 3,
-        blockedIPs: ["192.168.1.100", "10.0.0.50"],
-        malwareSignatures: ["Emotet.Variant.A", "Ransomware.Ryuk"],
-        networkSegmentationStatus: "Partial"
+        suspicious_connections: 12,
+        blocked_ips: ["192.168.1.100", "10.0.0.50"],
+        threat_indicators: ["T1071.001", "T1090.003"],
+        recommendation: "Immediate network segmentation required"
       };
       
       res.json({ 
         success: true, 
+        action: "traffic_analyzed",
         alertId,
-        analysis: analysisResults,
-        message: "Network traffic analysis complete" 
+        results: analysisResults
       });
     } catch (error) {
       res.status(500).json({ error: "Failed to analyze network traffic" });
@@ -308,29 +368,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { alertId, phase } = req.body;
       
-      // Create or update workflow session
-      const session = await storage.createWorkflowSession({
-        alert_id: alertId,
-        current_node: phase.toLowerCase() + "_phase",
-        started_at: new Date(),
-        completed_nodes: ["detection_phase"],
-        actions_taken: [{
-          timestamp: new Date().toISOString(),
-          action: `Advanced to ${phase}`,
-          details: { phase, automated: true }
-        }],
-        status: "Active",
-        user_role: "Analyst"
-      });
+      // Update or create workflow session to advance phase
+      let session = await storage.getWorkflowSessionByAlertId(alertId);
+      
+      if (!session) {
+        session = await storage.createWorkflowSession({
+          alert_id: alertId,
+          current_node: `${phase.toLowerCase()}-start`,
+          started_at: new Date(),
+          status: "Active",
+          completed_nodes: [],
+          actions_taken: { phase, advanced_at: new Date().toISOString() },
+          user_role: "Analyst"
+        });
+      } else {
+        session = await storage.updateWorkflowSession(session.id, {
+          current_node: `${phase.toLowerCase()}-start`,
+          actions_taken: { phase, advanced_at: new Date().toISOString() }
+        });
+      }
       
       res.json({ 
         success: true, 
-        session,
-        currentPhase: phase,
-        message: `Workflow advanced to ${phase} phase` 
+        action: "phase_advanced",
+        alertId,
+        newPhase: phase,
+        session 
       });
     } catch (error) {
-      res.status(500).json({ error: "Failed to advance workflow" });
+      res.status(500).json({ error: "Failed to advance workflow phase" });
     }
   });
 
@@ -370,14 +436,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
         role
       };
 
-      const aiResponse = await generateIncidentResponse(incidentContext);
-      
-      res.json({
-        success: true,
-        scenario,
-        role,
-        ...aiResponse
-      });
+      try {
+        const aiResponse = await generateIncidentResponse(incidentContext);
+        res.json({
+          success: true,
+          scenario,
+          role,
+          ...aiResponse
+        });
+      } catch (aiError) {
+        console.error('AI service error:', aiError);
+        
+        // Fallback recommendations when AI service is unavailable
+        const fallbackRecommendations = [
+          {
+            action: "Isolate All Endpoints",
+            description: "Immediately isolate affected systems to prevent further spread",
+            priority: 1,
+            source: "NIST CSF RS.MI-3: Contain incidents"
+          },
+          {
+            action: "Lock User Accounts", 
+            description: "Disable compromised accounts to prevent unauthorized access",
+            priority: 1,
+            source: "SANS Incident Handling Guide"
+          },
+          {
+            action: "Analyze Network Traffic",
+            description: "Review network logs to identify attack vectors and scope",
+            priority: 2,
+            source: "NIST CSF DE.AE-2: Analyze events"
+          }
+        ];
+
+        res.json({
+          success: true,
+          scenario,
+          role,
+          recommendations: fallbackRecommendations,
+          fallback: true,
+          message: "Using fallback recommendations - AI service temporarily unavailable"
+        });
+      }
     } catch (error) {
       console.error('AI assistant error:', error);
       res.status(500).json({ 
