@@ -8,6 +8,7 @@ import LogViewer from "@/components/LogViewer";
 import AIAssistantPanel from "@/components/AIAssistantPanel";
 import ReportGenerator from "@/components/ReportGenerator";
 import BusinessImpactMetrics from "@/components/BusinessImpactMetrics";
+import SimulationControlPanel from "@/components/SimulationControlPanel";
 import type { Alert, Endpoint, LogEntry } from "@shared/schema";
 import { useWorkflow } from "@/hooks/use-workflow";
 import { useScenario } from "@/contexts/ScenarioContext";
@@ -147,6 +148,13 @@ export default function Dashboard() {
         
         <div className="flex-1 flex">
           <div className="flex-1 p-6 overflow-y-auto">
+            {/* Simulation Control Panel - Only visible to Analysts and Managers */}
+            {(userRole === "Analyst" || userRole === "Manager") && (
+              <div className="mb-6">
+                <SimulationControlPanel />
+              </div>
+            )}
+            
             <div className="mb-6">
               <h2 className="text-2xl font-semibold mb-4">
                 {userRole === "Analyst" && "Active Incidents"}
