@@ -49,7 +49,7 @@ export class FileStorage implements IStorage {
     this.dataDir = path.join(import.meta.dirname, "data");
   }
 
-  private async readJsonFile<T>(filename: string): Promise<T[]> {
+  async readJsonFile<T>(filename: string): Promise<T[]> {
     try {
       const filePath = path.join(this.dataDir, filename);
       const data = await fs.readFile(filePath, "utf-8");

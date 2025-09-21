@@ -90,27 +90,42 @@ export default function AIAssistantPanel({
     },
   });
 
-  // AI-powered recommendations query
+  // Fetch playbook data for this alert
+  const { data: playbookData } = useQuery({
+    queryKey: ["/api/alerts", alertId, "playbook"],
+    enabled: !!alertId,
+  });
+
+  // AI-powered recommendations query  
   const { data: aiRecommendations, isLoading: loadingAI, refetch: refreshAI } = useQuery({
-    queryKey: ['/api/ai-assistant', selectedScenario?.id, selectedRole],
+    queryKey: ['/api/ai-assistant', alertId, selectedRole, playbookData?.id],
     queryFn: async () => {
-      if (!selectedScenario) return null;
+      if (!alertId || !playbookData) return null;
+      
+      // Map playbook IDs to scenario types for AI
+      const playbookToScenarioMap = {
+        "ransomware-response": "lateral-movement",
+        "credential-compromise-response": "internal-reconnaissance", 
+        "phishing-response": "perimeter-breach"
+      };
+      
+      const scenario = playbookToScenarioMap[playbookData.id as keyof typeof playbookToScenarioMap] || "lateral-movement";
       
       const response = await apiRequest(
         'POST',
         '/api/ai-assistant',
         {
-          scenario: selectedScenario.id,
-          evidence: selectedScenario.evidenceTypes,
-          severity: selectedScenario.threatLevel === 'Critical' ? 'critical' : 'high',
-          affected_systems: [`HU-${selectedScenario.name.toUpperCase().replace(' ', '-')}-01`, `HU-${selectedScenario.name.toUpperCase().replace(' ', '-')}-02`],
+          scenario,
+          evidence: ["network_logs", "endpoint_data", "security_alerts"],
+          severity: 'critical',
+          affected_systems: ["endpoint-01", "endpoint-02"],
           role: selectedRole
         }
       );
       const data = await response.json();
       return data.recommendations as AIRecommendation[];
     },
-    enabled: !!selectedScenario
+    enabled: !!alertId && !!playbookData
   });
 
   interface AIRecommendation {
@@ -169,22 +184,22 @@ export default function AIAssistantPanel({
       </div>
       
       <div className="space-y-4">
-        {/* Scenario Indicator */}
-        {selectedScenario && (
+        {/* Playbook Indicator */}
+        {playbookData && (
           <div className="bg-info/10 border border-info/20 rounded-lg p-4">
             <h4 className="font-medium mb-2 text-info flex items-center">
               <BookOpen className="w-4 h-4 mr-2" />
-              Active Playbook: {selectedScenario.name}
+              Active Playbook: {playbookData.name}
             </h4>
             <p className="text-sm text-muted-foreground mb-2">
-              {selectedScenario.description}
+              {playbookData.description}
             </p>
             <div className="flex items-center gap-2 text-xs">
-              <Badge variant={selectedScenario.threatLevel === 'Critical' ? 'destructive' : 'secondary'}>
-                {selectedScenario.threatLevel}
+              <Badge variant="secondary">
+                {Object.keys(playbookData.nodes || {}).length} phases
               </Badge>
               <span className="text-muted-foreground">
-                {selectedScenario.affectedSystemsCount} systems affected
+                Alert ID: {alertId}
               </span>
             </div>
           </div>
@@ -220,8 +235,8 @@ export default function AIAssistantPanel({
                 AI-Powered Incident Response
               </h4>
               <p className="text-sm text-muted-foreground mb-3">
-                {selectedScenario 
-                  ? `Active incident analysis using ${selectedScenario.name.toLowerCase()} playbook with role-based recommendations following NIST and SANS frameworks.`
+                {playbookData 
+                  ? `Active incident analysis using ${playbookData.name.toLowerCase()} with role-based recommendations following NIST and SANS frameworks.`
                   : "Select a playbook to begin AI-powered incident response guidance."
                 }
               </p>
@@ -239,7 +254,7 @@ export default function AIAssistantPanel({
               <div className="animate-pulse bg-muted h-16 rounded"></div>
               <div className="animate-pulse bg-muted h-16 rounded"></div>
             </div>
-          ) : selectedScenario ? (
+          ) : playbookData ? (
             <div className="space-y-2">
               {aiRecommendations?.map((rec, index) => (
                 <Button

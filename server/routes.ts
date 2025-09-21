@@ -84,21 +84,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Alert not found" });
       }
 
-      // Mock playbook data based on alert type
-      const playbookMap = {
-        "alert-001": { id: "ransomware-response", name: "Ransomware Response", phase: "containment" },
-        "alert-004": { id: "credential-compromise-response", name: "Credential Compromise Response", phase: "investigation" },
-        "alert-005": { id: "phishing-response", name: "Phishing Response", phase: "detection" }
+      // Load actual playbook data from JSON file
+      const playbooks = await storage.readJsonFile('server/data/playbook.json');
+      
+      // Map alert IDs to playbook IDs
+      const alertToPlaybookMap = {
+        "alert-001": "ransomware-response",
+        "alert-002": "ransomware-response", 
+        "alert-004": "credential-compromise-response",
+        "alert-005": "phishing-response"
       };
 
-      const playbook = playbookMap[id as keyof typeof playbookMap] || { 
-        id: "general-response", 
-        name: "General Incident Response", 
-        phase: "detection" 
-      };
+      const playbookId = alertToPlaybookMap[id as keyof typeof alertToPlaybookMap] || "ransomware-response";
+      const playbook = playbooks.find((p: any) => p.id === playbookId);
+
+      if (!playbook) {
+        return res.status(404).json({ error: "Playbook not found" });
+      }
 
       res.json(playbook);
     } catch (error) {
+      console.error("Failed to fetch playbook:", error);
       res.status(500).json({ error: "Failed to fetch playbook" });
     }
   });
