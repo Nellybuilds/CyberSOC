@@ -85,7 +85,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Load actual playbook data from JSON file
-      const playbooks = await storage.readJsonFile('server/data/playbook.json');
+      const playbooks = await storage.readJsonFile('playbook.json');
       
       // Map alert IDs to playbook IDs
       const alertToPlaybookMap = {

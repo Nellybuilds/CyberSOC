@@ -91,7 +91,7 @@ export default function AIAssistantPanel({
   });
 
   // Fetch playbook data for this alert
-  const { data: playbookData } = useQuery({
+  const { data: playbookData } = useQuery<any>({
     queryKey: ["/api/alerts", alertId, "playbook"],
     enabled: !!alertId,
   });
@@ -189,14 +189,14 @@ export default function AIAssistantPanel({
           <div className="bg-info/10 border border-info/20 rounded-lg p-4">
             <h4 className="font-medium mb-2 text-info flex items-center">
               <BookOpen className="w-4 h-4 mr-2" />
-              Active Playbook: {playbookData.name}
+              Active Playbook: {playbookData?.name}
             </h4>
             <p className="text-sm text-muted-foreground mb-2">
-              {playbookData.description}
+              {playbookData?.description}
             </p>
             <div className="flex items-center gap-2 text-xs">
               <Badge variant="secondary">
-                {Object.keys(playbookData.nodes || {}).length} phases
+                {Object.keys(playbookData?.nodes || {}).length} phases
               </Badge>
               <span className="text-muted-foreground">
                 Alert ID: {alertId}
@@ -236,7 +236,7 @@ export default function AIAssistantPanel({
               </h4>
               <p className="text-sm text-muted-foreground mb-3">
                 {playbookData 
-                  ? `Active incident analysis using ${playbookData.name.toLowerCase()} with role-based recommendations following NIST and SANS frameworks.`
+                  ? `Active incident analysis using ${playbookData?.name?.toLowerCase()} with role-based recommendations following NIST and SANS frameworks.`
                   : "Select a playbook to begin AI-powered incident response guidance."
                 }
               </p>
