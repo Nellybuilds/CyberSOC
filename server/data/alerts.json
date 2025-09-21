@@ -66,5 +66,80 @@
       "T1204.001"
     ],
     "description": "Multiple users have received and potentially clicked on malicious phishing emails containing credential harvesting links."
+  },
+  {
+    "id": "alert-003",
+    "title": "Advanced Persistent Threat Detected",
+    "severity": "Critical",
+    "status": "New",
+    "timestamp": "2025-09-21T17:40:00Z",
+    "affected_endpoints": [
+      "endpoint-01",
+      "endpoint-03",
+      "endpoint-04",
+      "endpoint-06"
+    ],
+    "mitre_tactics": [
+      "T1055",
+      "T1027",
+      "T1083",
+      "T1057"
+    ],
+    "description": "Sophisticated threat actor with advanced evasion techniques detected. Evidence of lateral movement, persistence mechanisms, and covert reconnaissance activity."
+  },
+  {
+    "id": "alert-006",
+    "title": "Data Breach - Customer Records Exfiltrated",
+    "severity": "Critical",
+    "status": "New",
+    "timestamp": "2025-09-21T17:35:00Z",
+    "affected_endpoints": [
+      "endpoint-02",
+      "endpoint-05",
+      "endpoint-07"
+    ],
+    "mitre_tactics": [
+      "T1041",
+      "T1048",
+      "T1567",
+      "T1213"
+    ],
+    "description": "Unauthorized data exfiltration detected. Customer personal information and financial records have been accessed and transmitted to external servers."
+  },
+  {
+    "id": "alert-007",
+    "title": "DDoS Attack - Service Disruption",
+    "severity": "High",
+    "status": "New",
+    "timestamp": "2025-09-21T17:30:00Z",
+    "affected_endpoints": [
+      "endpoint-01",
+      "endpoint-02",
+      "endpoint-03"
+    ],
+    "mitre_tactics": [
+      "T1498",
+      "T1499",
+      "T1590"
+    ],
+    "description": "Distributed denial of service attack targeting web services. Network saturation and service unavailability affecting business operations."
+  },
+  {
+    "id": "alert-008",
+    "title": "Insider Threat - Unusual Access Pattern",
+    "severity": "Critical",
+    "status": "New",
+    "timestamp": "2025-09-21T17:25:00Z",
+    "affected_endpoints": [
+      "endpoint-04",
+      "endpoint-06"
+    ],
+    "mitre_tactics": [
+      "T1078",
+      "T1005",
+      "T1039",
+      "T1083"
+    ],
+    "description": "Abnormal user access patterns detected. Employee accessing sensitive data outside normal hours with unusual download activity and privilege escalation attempts."
   }
 ]

@@ -298,6 +298,38 @@ export class FileStorage implements IStorage {
         affectedEndpoints: ["endpoint-01", "endpoint-02"],
         status: "New" as const,
         severity: "High" as const
+      },
+      "apt": {
+        alertId: "alert-003",
+        name: "Advanced Persistent Threat",
+        playbookId: "apt-response",
+        affectedEndpoints: ["endpoint-01", "endpoint-03", "endpoint-04", "endpoint-06"],
+        status: "New" as const,
+        severity: "Critical" as const
+      },
+      "data-breach": {
+        alertId: "alert-006",
+        name: "Data Breach Investigation",
+        playbookId: "data-breach-response",
+        affectedEndpoints: ["endpoint-02", "endpoint-05", "endpoint-07"],
+        status: "New" as const,
+        severity: "Critical" as const
+      },
+      "ddos": {
+        alertId: "alert-007",
+        name: "DDoS Attack Response",
+        playbookId: "ddos-response",
+        affectedEndpoints: ["endpoint-01", "endpoint-02", "endpoint-03"],
+        status: "New" as const,
+        severity: "High" as const
+      },
+      "insider-threat": {
+        alertId: "alert-008",
+        name: "Insider Threat Investigation",
+        playbookId: "insider-threat-response",
+        affectedEndpoints: ["endpoint-04", "endpoint-06"],
+        status: "New" as const,
+        severity: "Critical" as const
       }
     };
     
@@ -571,6 +603,38 @@ export class DatabaseStorage implements IStorage {
         affectedEndpoints: ["endpoint-01", "endpoint-02"],
         status: "New" as const,
         severity: "High" as const
+      },
+      "apt": {
+        alertId: "alert-003",
+        name: "Advanced Persistent Threat",
+        playbookId: "apt-response",
+        affectedEndpoints: ["endpoint-01", "endpoint-03", "endpoint-04", "endpoint-06"],
+        status: "New" as const,
+        severity: "Critical" as const
+      },
+      "data-breach": {
+        alertId: "alert-006",
+        name: "Data Breach Investigation",
+        playbookId: "data-breach-response",
+        affectedEndpoints: ["endpoint-02", "endpoint-05", "endpoint-07"],
+        status: "New" as const,
+        severity: "Critical" as const
+      },
+      "ddos": {
+        alertId: "alert-007",
+        name: "DDoS Attack Response",
+        playbookId: "ddos-response",
+        affectedEndpoints: ["endpoint-01", "endpoint-02", "endpoint-03"],
+        status: "New" as const,
+        severity: "High" as const
+      },
+      "insider-threat": {
+        alertId: "alert-008",
+        name: "Insider Threat Investigation",
+        playbookId: "insider-threat-response",
+        affectedEndpoints: ["endpoint-04", "endpoint-06"],
+        status: "New" as const,
+        severity: "Critical" as const
       }
     };
     
