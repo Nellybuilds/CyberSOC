@@ -148,6 +148,162 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Intelligent Incident Classification Engine
+  app.post("/api/classify-incident", async (req, res) => {
+    try {
+      const { evidence, organizationalContext } = req.body;
+      
+      // Initialize classification scores for all incident types
+      const incidentScores = {
+        ransomware: 0,
+        "credential-compromise": 0,
+        phishing: 0,
+        apt: 0,
+        "data-breach": 0,
+        ddos: 0,
+        "insider-threat": 0
+      };
+
+      // Evidence-based scoring system
+      if (evidence) {
+        // File system indicators
+        if (evidence.fileEncryption || evidence.ransomnote) incidentScores.ransomware += 40;
+        if (evidence.suspiciousFileExtensions) incidentScores.ransomware += 20;
+        if (evidence.systemFilesModified) incidentScores.ransomware += 15;
+
+        // Network indicators  
+        if (evidence.commandAndControlTraffic) {
+          incidentScores.apt += 35;
+          incidentScores.ransomware += 20;
+        }
+        if (evidence.dataExfiltration) {
+          incidentScores["data-breach"] += 45;
+          incidentScores.apt += 25;
+          incidentScores["insider-threat"] += 20;
+        }
+        if (evidence.ddosTraffic || evidence.networkSaturation) incidentScores.ddos += 50;
+        if (evidence.unusualNetworkPatterns) {
+          incidentScores.apt += 20;
+          incidentScores["insider-threat"] += 15;
+        }
+
+        // Authentication indicators
+        if (evidence.failedLogins || evidence.bruteForceAttempts) {
+          incidentScores["credential-compromise"] += 35;
+          incidentScores["insider-threat"] += 15;
+        }
+        if (evidence.privilegeEscalation) {
+          incidentScores.apt += 30;
+          incidentScores["credential-compromise"] += 25;
+          incidentScores["insider-threat"] += 20;
+        }
+        if (evidence.abnormalAccessPatterns) {
+          incidentScores["insider-threat"] += 35;
+          incidentScores["credential-compromise"] += 20;
+        }
+
+        // Email and social engineering indicators
+        if (evidence.phishingEmails || evidence.socialEngineering) {
+          incidentScores.phishing += 40;
+          incidentScores["credential-compromise"] += 15;
+        }
+        if (evidence.maliciousAttachments) {
+          incidentScores.phishing += 25;
+          incidentScores.ransomware += 15;
+        }
+
+        // Persistence and stealth indicators
+        if (evidence.persistentAccess || evidence.lateralMovement) {
+          incidentScores.apt += 40;
+          incidentScores["insider-threat"] += 25;
+        }
+        if (evidence.antiForensics || evidence.evidenceDestruction) {
+          incidentScores.apt += 30;
+          incidentScores["insider-threat"] += 25;
+        }
+
+        // Data access patterns
+        if (evidence.sensitiveDataAccess) {
+          incidentScores["data-breach"] += 30;
+          incidentScores["insider-threat"] += 25;
+          incidentScores.apt += 20;
+        }
+        if (evidence.offHoursAccess) {
+          incidentScores["insider-threat"] += 30;
+          incidentScores.apt += 15;
+        }
+
+        // Business impact indicators
+        if (evidence.serviceUnavailability) {
+          incidentScores.ddos += 35;
+          incidentScores.ransomware += 25;
+        }
+        if (evidence.financialLoss) {
+          incidentScores["data-breach"] += 20;
+          incidentScores.ransomware += 15;
+        }
+      }
+
+      // Organizational context modifiers
+      if (organizationalContext) {
+        // Industry-specific risk adjustments
+        if (organizationalContext.industry === "finance") {
+          incidentScores["data-breach"] += 10;
+          incidentScores.apt += 10;
+          incidentScores["insider-threat"] += 5;
+        } else if (organizationalContext.industry === "healthcare") {
+          incidentScores["data-breach"] += 15;
+          incidentScores.ransomware += 10;
+        } else if (organizationalContext.industry === "government") {
+          incidentScores.apt += 20;
+          incidentScores["insider-threat"] += 10;
+        }
+
+        // Organization size impact
+        if (organizationalContext.size === "enterprise") {
+          incidentScores.apt += 10;
+          incidentScores["insider-threat"] += 5;
+        } else if (organizationalContext.size === "small") {
+          incidentScores.ransomware += 5;
+          incidentScores.phishing += 5;
+        }
+
+        // Security maturity adjustments
+        if (organizationalContext.securityMaturity === "basic") {
+          incidentScores.phishing += 10;
+          incidentScores.ransomware += 5;
+        } else if (organizationalContext.securityMaturity === "advanced") {
+          incidentScores.apt += 15;
+          incidentScores["insider-threat"] += 10;
+        }
+      }
+
+      // Find the highest scoring incident type
+      const sortedIncidents = Object.entries(incidentScores)
+        .sort(([,a], [,b]) => b - a)
+        .slice(0, 3); // Top 3 recommendations
+
+      // Generate confidence levels and recommendations
+      const classification = {
+        primaryIncidentType: sortedIncidents[0][0],
+        confidence: Math.min(100, sortedIncidents[0][1]),
+        alternativeTypes: sortedIncidents.slice(1).map(([type, score]) => ({
+          type,
+          confidence: Math.min(100, score)
+        })),
+        recommendedPlaybook: `${sortedIncidents[0][0]}-response`,
+        reasoning: generateClassificationReasoning(sortedIncidents[0][0], evidence, organizationalContext),
+        riskLevel: calculateRiskLevel(sortedIncidents[0][1], evidence),
+        recommendedActions: generateRecommendedActions(sortedIncidents[0][0], evidence)
+      };
+
+      res.json(classification);
+    } catch (error) {
+      console.error("Error in incident classification:", error);
+      res.status(500).json({ error: "Failed to classify incident" });
+    }
+  });
+
   // Create Incident - operational incident response
   app.post("/api/incidents/create", async (req, res) => {
     try {
@@ -515,4 +671,85 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   const httpServer = createServer(app);
   return httpServer;
+}
+
+// Helper functions for intelligent classification
+function generateClassificationReasoning(incidentType: string, evidence: any, organizationalContext: any): string {
+  const reasoningMap = {
+    ransomware: "File encryption and ransom note indicators suggest ransomware attack. Immediate containment required.",
+    "credential-compromise": "Failed login attempts and privilege escalation patterns indicate credential compromise.",
+    phishing: "Social engineering and malicious email patterns suggest phishing campaign targeting users.", 
+    apt: "Persistent access, lateral movement, and stealth techniques indicate advanced persistent threat.",
+    "data-breach": "Data exfiltration and sensitive data access patterns suggest data breach incident.",
+    ddos: "Network saturation and service unavailability indicate distributed denial of service attack.",
+    "insider-threat": "Abnormal access patterns and off-hours activity suggest potential insider threat."
+  };
+
+  let reasoning = reasoningMap[incidentType as keyof typeof reasoningMap] || "Classification based on evidence analysis.";
+  
+  if (organizationalContext) {
+    if (organizationalContext.industry === "finance") {
+      reasoning += " Financial sector faces elevated risks for APT and data theft.";
+    } else if (organizationalContext.industry === "healthcare") {
+      reasoning += " Healthcare data makes this organization a high-value target.";
+    }
+  }
+  
+  return reasoning;
+}
+
+function calculateRiskLevel(score: number, evidence: any): string {
+  if (score >= 40) return "Critical";
+  if (score >= 25) return "High"; 
+  if (score >= 15) return "Medium";
+  return "Low";
+}
+
+function generateRecommendedActions(incidentType: string, evidence: any): string[] {
+  const actionMap = {
+    ransomware: [
+      "Isolate affected systems immediately",
+      "Preserve evidence before cleanup", 
+      "Contact law enforcement if required",
+      "Assess backup integrity"
+    ],
+    "credential-compromise": [
+      "Force password reset for affected accounts",
+      "Enable multi-factor authentication",
+      "Review access logs for unauthorized activity",
+      "Monitor for lateral movement"
+    ],
+    phishing: [
+      "Block sender and malicious URLs",
+      "Remove emails from all mailboxes",
+      "Educate users about the attack",
+      "Update email security filters"
+    ],
+    apt: [
+      "Maintain stealth monitoring",
+      "Preserve evidence carefully",
+      "Consider government notification",
+      "Deploy advanced threat hunting"
+    ],
+    "data-breach": [
+      "Assess data exposure scope",
+      "Prepare regulatory notifications",
+      "Secure backup evidence",
+      "Coordinate legal response"
+    ],
+    ddos: [
+      "Activate DDoS protection services",
+      "Contact ISP for upstream filtering",
+      "Monitor attack patterns",
+      "Prepare business continuity"
+    ],
+    "insider-threat": [
+      "Conduct covert investigation",
+      "Preserve digital evidence",
+      "Coordinate with HR and legal",
+      "Monitor user activities carefully"
+    ]
+  };
+  
+  return actionMap[incidentType as keyof typeof actionMap] || ["Follow standard incident response procedures"];
 }
