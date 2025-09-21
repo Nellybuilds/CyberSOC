@@ -669,6 +669,167 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Conditional Logic Evaluation for Dynamic Branching
+  app.post("/api/workflow/evaluate-conditions", async (req, res) => {
+    try {
+      const { alertId, currentNode, evidence, investigationFindings } = req.body;
+      
+      // Get current workflow session
+      const session = await storage.getWorkflowSessionByAlertId(alertId);
+      if (!session) {
+        return res.status(404).json({ error: "No active workflow session found" });
+      }
+
+      // Load playbook data
+      const playbooks = await storage.readJsonFile('playbook.json');
+      const alertToPlaybookMap = {
+        "alert-001": "ransomware-response",
+        "alert-002": "ransomware-response", 
+        "alert-003": "apt-response",
+        "alert-004": "credential-compromise-response",
+        "alert-005": "phishing-response",
+        "alert-006": "data-breach-response",
+        "alert-007": "ddos-response",
+        "alert-008": "insider-threat-response"
+      };
+
+      const playbookId = alertToPlaybookMap[alertId as keyof typeof alertToPlaybookMap];
+      const playbook = playbooks.find((p: any) => p.id === playbookId);
+      if (!playbook) {
+        return res.status(404).json({ error: "Playbook not found" });
+      }
+
+      const node = playbook.nodes[currentNode];
+      if (!node) {
+        return res.status(404).json({ error: "Current node not found" });
+      }
+
+      // Evaluate conditional logic based on evidence and findings
+      const conditionalEvaluation = evaluateConditionalLogic(
+        node, 
+        evidence, 
+        investigationFindings, 
+        playbook.id
+      );
+
+      res.json({
+        success: true,
+        currentNode,
+        conditionalOptions: conditionalEvaluation.options,
+        recommendedPath: conditionalEvaluation.recommendedPath,
+        riskAssessment: conditionalEvaluation.riskAssessment,
+        evidenceThresholds: conditionalEvaluation.evidenceThresholds,
+        nextSteps: conditionalEvaluation.nextSteps
+      });
+    } catch (error) {
+      console.error("Error evaluating conditions:", error);
+      res.status(500).json({ error: "Failed to evaluate conditional logic" });
+    }
+  });
+
+  // Evidence Threshold Assessment 
+  app.post("/api/workflow/assess-evidence", async (req, res) => {
+    try {
+      const { alertId, evidenceType, evidenceStrength, context } = req.body;
+      
+      // Define evidence thresholds for different incident types
+      const evidenceThresholds = {
+        "ransomware": {
+          fileEncryption: { critical: 80, high: 60, medium: 40 },
+          networkActivity: { critical: 70, high: 50, medium: 30 },
+          systemChanges: { critical: 90, high: 70, medium: 50 }
+        },
+        "apt": {
+          persistence: { critical: 85, high: 65, medium: 45 },
+          lateralMovement: { critical: 75, high: 55, medium: 35 },
+          dataAccess: { critical: 80, high: 60, medium: 40 }
+        },
+        "data-breach": {
+          dataExfiltration: { critical: 90, high: 70, medium: 50 },
+          unauthorizedAccess: { critical: 80, high: 60, medium: 40 },
+          regulatoryImpact: { critical: 95, high: 75, medium: 55 }
+        },
+        "insider-threat": {
+          abnormalAccess: { critical: 70, high: 50, medium: 30 },
+          dataDownload: { critical: 85, high: 65, medium: 45 },
+          policyViolation: { critical: 75, high: 55, medium: 35 }
+        }
+      };
+
+      // Determine incident type from alert
+      const alertToIncidentMap = {
+        "alert-001": "ransomware",
+        "alert-002": "ransomware",
+        "alert-003": "apt", 
+        "alert-004": "credential-compromise",
+        "alert-005": "phishing",
+        "alert-006": "data-breach",
+        "alert-007": "ddos",
+        "alert-008": "insider-threat"
+      };
+
+      const incidentType = alertToIncidentMap[alertId as keyof typeof alertToIncidentMap];
+      const thresholds = evidenceThresholds[incidentType as keyof typeof evidenceThresholds];
+
+      if (!thresholds || !thresholds[evidenceType as keyof typeof thresholds]) {
+        return res.status(400).json({ error: "Unknown evidence type for this incident" });
+      }
+
+      const threshold = thresholds[evidenceType as keyof typeof thresholds];
+      let severity = "low";
+      let escalationRequired = false;
+      let recommendedActions = [];
+
+      if (evidenceStrength >= threshold.critical) {
+        severity = "critical";
+        escalationRequired = true;
+        recommendedActions = [
+          "Immediate escalation to incident commander",
+          "Activate emergency response procedures",
+          "Consider law enforcement notification"
+        ];
+      } else if (evidenceStrength >= threshold.high) {
+        severity = "high";
+        escalationRequired = true;
+        recommendedActions = [
+          "Escalate to senior analyst",
+          "Implement additional containment measures",
+          "Prepare stakeholder notifications"
+        ];
+      } else if (evidenceStrength >= threshold.medium) {
+        severity = "medium";
+        recommendedActions = [
+          "Continue detailed investigation",
+          "Monitor for additional indicators",
+          "Document findings thoroughly"
+        ];
+      } else {
+        recommendedActions = [
+          "Collect additional evidence",
+          "Expand monitoring scope",
+          "Review investigation methodology"
+        ];
+      }
+
+      res.json({
+        success: true,
+        evidenceType,
+        evidenceStrength,
+        severity,
+        escalationRequired,
+        threshold,
+        recommendedActions,
+        context: {
+          incidentType,
+          assessmentTime: new Date().toISOString()
+        }
+      });
+    } catch (error) {
+      console.error("Error assessing evidence:", error);
+      res.status(500).json({ error: "Failed to assess evidence" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
@@ -752,4 +913,273 @@ function generateRecommendedActions(incidentType: string, evidence: any): string
   };
   
   return actionMap[incidentType as keyof typeof actionMap] || ["Follow standard incident response procedures"];
+}
+
+// Conditional Logic Evaluation Engine
+function evaluateConditionalLogic(
+  node: any, 
+  evidence: any, 
+  investigationFindings: any, 
+  playbookId: string
+): any {
+  const conditionalOptions = [];
+  let recommendedPath = null;
+  let riskLevel = "medium";
+  
+  // APT-specific conditional logic
+  if (playbookId === "apt-response") {
+    if (node.id === "attribution_analysis") {
+      if (evidence?.nationStateIndicators >= 75) {
+        recommendedPath = "government_coordination";
+        riskLevel = "critical";
+        conditionalOptions.push({
+          condition: "Nation-state attribution confidence > 75%",
+          action: "Escalate to government agencies immediately",
+          nextNode: "government_coordination",
+          priority: 1
+        });
+      } else if (evidence?.criminalGroupIndicators >= 60) {
+        recommendedPath = "threat_hunting_phase";
+        riskLevel = "high";
+        conditionalOptions.push({
+          condition: "Criminal group attribution likely",
+          action: "Continue internal investigation",
+          nextNode: "threat_hunting_phase", 
+          priority: 2
+        });
+      }
+    }
+    
+    if (node.id === "stealth_detection_phase") {
+      if (evidence?.detectionRisk >= 70) {
+        recommendedPath = "threat_hunting_phase";
+        conditionalOptions.push({
+          condition: "High risk of threat actor detection",
+          action: "Accelerate to active hunting",
+          nextNode: "threat_hunting_phase",
+          priority: 1
+        });
+      } else {
+        recommendedPath = "attribution_analysis";
+        conditionalOptions.push({
+          condition: "Low detection risk - maintain stealth",
+          action: "Proceed with covert analysis",
+          nextNode: "attribution_analysis",
+          priority: 2
+        });
+      }
+    }
+  }
+  
+  // Data Breach conditional logic
+  if (playbookId === "data-breach-response") {
+    if (node.id === "breach_assessment") {
+      if (evidence?.regulatedData === true) {
+        recommendedPath = "regulatory_notification";
+        riskLevel = "critical";
+        conditionalOptions.push({
+          condition: "Regulated data involved (PII/PHI/Financial)",
+          action: "Immediate regulatory notification required",
+          nextNode: "regulatory_notification",
+          priority: 1
+        });
+      } else if (evidence?.intellectualProperty === true) {
+        recommendedPath = "forensic_preservation";
+        riskLevel = "high";
+        conditionalOptions.push({
+          condition: "Intellectual property theft detected",
+          action: "Preserve evidence for legal action",
+          nextNode: "forensic_preservation", 
+          priority: 2
+        });
+      }
+    }
+    
+    if (node.id === "regulatory_notification") {
+      const timeElapsed = investigationFindings?.hoursElapsed || 0;
+      if (timeElapsed >= 48) {
+        conditionalOptions.push({
+          condition: "48+ hours elapsed - GDPR deadline approaching",
+          action: "Emergency notification filing required",
+          nextNode: "customer_notification",
+          priority: 1
+        });
+        riskLevel = "critical";
+      }
+    }
+  }
+  
+  // Insider Threat conditional logic
+  if (playbookId === "insider-threat-response") {
+    if (node.id === "behavioral_analysis") {
+      if (evidence?.maliciousIntent >= 80) {
+        recommendedPath = "immediate_containment";
+        riskLevel = "critical";
+        conditionalOptions.push({
+          condition: "High confidence malicious intent",
+          action: "Immediate access revocation and containment",
+          nextNode: "immediate_containment",
+          priority: 1
+        });
+      } else if (evidence?.compromisedAccount >= 70) {
+        recommendedPath = "credential_investigation";
+        riskLevel = "high";
+        conditionalOptions.push({
+          condition: "Likely compromised account",
+          action: "Investigate credential compromise",
+          nextNode: "credential_investigation",
+          priority: 2
+        });
+      } else {
+        recommendedPath = "corrective_action";
+        conditionalOptions.push({
+          condition: "Negligent behavior pattern",
+          action: "Implement training and corrective measures",
+          nextNode: "corrective_action",
+          priority: 3
+        });
+      }
+    }
+  }
+  
+  // DDoS conditional logic
+  if (playbookId === "ddos-response") {
+    if (node.id === "attack_classification") {
+      if (evidence?.volumetricAttack >= 80) {
+        recommendedPath = "isp_coordination";
+        riskLevel = "critical";
+        conditionalOptions.push({
+          condition: "High-volume network layer attack",
+          action: "Immediate ISP coordination required",
+          nextNode: "isp_coordination",
+          priority: 1
+        });
+      } else if (evidence?.applicationLayerAttack >= 70) {
+        recommendedPath = "waf_activation";
+        riskLevel = "high";
+        conditionalOptions.push({
+          condition: "Application layer attack detected",
+          action: "Activate WAF and application protection",
+          nextNode: "waf_activation",
+          priority: 2
+        });
+      }
+    }
+  }
+  
+  // Ransomware conditional logic
+  if (playbookId === "ransomware-response") {
+    if (node.id === "scoping_phase") {
+      const infectedSystems = evidence?.infectedSystemCount || 0;
+      if (infectedSystems >= 10) {
+        riskLevel = "critical";
+        conditionalOptions.push({
+          condition: "Widespread infection (10+ systems)",
+          action: "Emergency isolation protocols",
+          nextNode: "investigation_phase",
+          priority: 1
+        });
+      } else if (infectedSystems >= 5) {
+        riskLevel = "high";
+        conditionalOptions.push({
+          condition: "Moderate spread (5-9 systems)",
+          action: "Accelerated containment",
+          nextNode: "investigation_phase",
+          priority: 2
+        });
+      }
+    }
+  }
+  
+  // Default fallback
+  if (conditionalOptions.length === 0) {
+    conditionalOptions.push({
+      condition: "Standard progression",
+      action: "Continue with next planned step",
+      nextNode: node.options?.[0]?.next_node || null,
+      priority: 3
+    });
+  }
+  
+  return {
+    options: conditionalOptions,
+    recommendedPath: recommendedPath || conditionalOptions[0]?.nextNode,
+    riskAssessment: {
+      level: riskLevel,
+      factors: Object.keys(evidence || {}),
+      confidence: calculateConfidence(evidence, investigationFindings)
+    },
+    evidenceThresholds: getEvidenceThresholds(playbookId),
+    nextSteps: generateConditionalNextSteps(conditionalOptions, riskLevel)
+  };
+}
+
+function calculateConfidence(evidence: any, findings: any): number {
+  let confidence = 50; // Base confidence
+  
+  if (evidence) {
+    const evidenceCount = Object.keys(evidence).length;
+    confidence += Math.min(evidenceCount * 5, 30); // Up to 30 points for evidence
+  }
+  
+  if (findings) {
+    const findingsCount = Object.keys(findings).length;
+    confidence += Math.min(findingsCount * 3, 20); // Up to 20 points for findings
+  }
+  
+  return Math.min(confidence, 95); // Cap at 95%
+}
+
+function getEvidenceThresholds(playbookId: string): any {
+  const thresholdMap = {
+    "apt-response": {
+      nationStateIndicators: { critical: 75, high: 60, medium: 40 },
+      persistence: { critical: 80, high: 65, medium: 45 },
+      sophistication: { critical: 85, high: 70, medium: 50 }
+    },
+    "data-breach-response": {
+      dataVolume: { critical: 1000000, high: 100000, medium: 10000 },
+      sensitivityLevel: { critical: 90, high: 70, medium: 50 },
+      regulatoryImpact: { critical: 95, high: 75, medium: 55 }
+    },
+    "insider-threat-response": {
+      behavioralAnomalies: { critical: 80, high: 60, medium: 40 },
+      dataAccess: { critical: 85, high: 65, medium: 45 },
+      privilegeAbuse: { critical: 75, high: 55, medium: 35 }
+    },
+    "ddos-response": {
+      trafficVolume: { critical: 10000, high: 5000, medium: 1000 },
+      serviceImpact: { critical: 90, high: 70, medium: 50 },
+      attackComplexity: { critical: 80, high: 60, medium: 40 }
+    }
+  };
+  
+  return thresholdMap[playbookId as keyof typeof thresholdMap] || {};
+}
+
+function generateConditionalNextSteps(options: any[], riskLevel: string): string[] {
+  const nextSteps = [];
+  
+  if (riskLevel === "critical") {
+    nextSteps.push("Immediate escalation required");
+    nextSteps.push("Activate emergency response team");
+    nextSteps.push("Consider external assistance");
+  } else if (riskLevel === "high") {
+    nextSteps.push("Escalate to senior analyst");
+    nextSteps.push("Increase monitoring frequency");
+    nextSteps.push("Prepare stakeholder notifications");
+  } else {
+    nextSteps.push("Continue systematic investigation");
+    nextSteps.push("Document findings thoroughly");
+    nextSteps.push("Monitor for changes");
+  }
+  
+  // Add option-specific next steps
+  options.forEach(option => {
+    if (option.priority === 1) {
+      nextSteps.unshift(`Priority: ${option.action}`);
+    }
+  });
+  
+  return nextSteps;
 }
