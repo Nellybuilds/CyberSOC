@@ -4,7 +4,7 @@
     "hostname": "HU-FINANCE-PC01",
     "ip_address": "10.1.5.12",
     "user": "j.doe",
-    "status": "Affected",
+    "status": "Isolated",
     "os": "Windows 11",
     "department": "Finance"
   },

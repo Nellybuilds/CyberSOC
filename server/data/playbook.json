@@ -322,5 +322,702 @@
         "playbook_reference": "NIST CSF: RS.IM-1, PR.AT-1"
       }
     }
+  },
+  {
+    "id": "apt-response",
+    "name": "Advanced Persistent Threat (APT) Response",
+    "description": "Sophisticated long-term threat actor investigation and neutralization playbook",
+    "start_node": "stealth_detection_phase",
+    "nodes": {
+      "stealth_detection_phase": {
+        "id": "stealth_detection_phase",
+        "title": "Stealth Detection and Initial Assessment",
+        "ai_prompt": "APT activity detected with sophisticated evasion techniques. Prioritize evidence preservation and covert investigation to avoid alerting the threat actor.",
+        "phase": "Detection",
+        "options": [
+          {
+            "label": "Maintain Stealth - Deep Monitoring",
+            "action": "STEALTH_MONITORING",
+            "next_node": "attribution_analysis"
+          },
+          {
+            "label": "Limited Containment - High Value Targets",
+            "action": "SELECTIVE_CONTAINMENT",
+            "next_node": "threat_hunting_phase"
+          }
+        ],
+        "mitre_techniques": ["T1055", "T1027", "T1140"],
+        "playbook_reference": "NIST CSF: DE.AE-1, DE.CM-7"
+      },
+      "attribution_analysis": {
+        "id": "attribution_analysis",
+        "title": "Threat Actor Attribution and TTPs Analysis",
+        "ai_prompt": "Analyze threat actor techniques, tactics, and procedures to determine attribution and predict next moves. Consider nation-state indicators.",
+        "phase": "Investigation",
+        "options": [
+          {
+            "label": "Nation-State Attribution Path",
+            "action": "NATION_STATE_ANALYSIS",
+            "next_node": "government_coordination"
+          },
+          {
+            "label": "Criminal Group Attribution Path",
+            "action": "CRIMINAL_GROUP_ANALYSIS", 
+            "next_node": "threat_hunting_phase"
+          }
+        ],
+        "mitre_techniques": ["T1583", "T1587", "T1588"],
+        "playbook_reference": "NIST CSF: DE.AE-4, DE.DP-1"
+      },
+      "government_coordination": {
+        "id": "government_coordination",
+        "title": "Government Agency Coordination",
+        "ai_prompt": "Nation-state threat detected. Coordinate with appropriate government agencies while maintaining operational security.",
+        "phase": "Investigation",
+        "options": [
+          {
+            "label": "Contact FBI/CISA Immediately", 
+            "action": "GOVERNMENT_NOTIFICATION",
+            "next_node": "extended_monitoring"
+          },
+          {
+            "label": "Internal Assessment First",
+            "action": "INTERNAL_ASSESSMENT",
+            "next_node": "threat_hunting_phase"
+          }
+        ],
+        "mitre_techniques": [],
+        "playbook_reference": "Presidential Policy Directive 41"
+      },
+      "threat_hunting_phase": {
+        "id": "threat_hunting_phase", 
+        "title": "Active Threat Hunting and Intelligence Gathering",
+        "ai_prompt": "Conduct proactive threat hunting to identify full scope of compromise while maintaining stealth operations.",
+        "phase": "Investigation",
+        "options": [
+          {
+            "label": "Memory Forensics and Advanced Analysis",
+            "action": "ADVANCED_FORENSICS",
+            "next_node": "coordinated_response"
+          },
+          {
+            "label": "Network Flow Analysis and Beaconing",
+            "action": "NETWORK_ANALYSIS", 
+            "next_node": "coordinated_response"
+          }
+        ],
+        "mitre_techniques": ["T1055", "T1090", "T1573"],
+        "playbook_reference": "SANS FOR508, NIST CSF: DE.AE-3"
+      },
+      "extended_monitoring": {
+        "id": "extended_monitoring",
+        "title": "Extended Monitoring and Intelligence Collection", 
+        "ai_prompt": "Implement long-term monitoring to gather intelligence on threat actor capabilities and intentions.",
+        "phase": "Investigation",
+        "options": [
+          {
+            "label": "Deploy Honeypots and Canaries",
+            "action": "DEPLOY_DECEPTION",
+            "next_node": "coordinated_response"
+          },
+          {
+            "label": "Enhanced Network Monitoring",
+            "action": "ENHANCED_MONITORING",
+            "next_node": "coordinated_response"
+          }
+        ],
+        "mitre_techniques": ["T1083", "T1057"],
+        "playbook_reference": "NIST CSF: DE.CM-1, DE.CM-7"
+      },
+      "coordinated_response": {
+        "id": "coordinated_response",
+        "title": "Coordinated Neutralization and Recovery",
+        "ai_prompt": "Execute coordinated response to neutralize APT while preserving evidence and preventing reinfection.",
+        "phase": "Remediation", 
+        "options": [
+          {
+            "label": "Simultaneous Multi-System Cleanup",
+            "action": "COORDINATED_CLEANUP",
+            "next_node": "apt_hardening"
+          },
+          {
+            "label": "Gradual Systematic Removal",
+            "action": "GRADUAL_REMOVAL",
+            "next_node": "apt_hardening"
+          }
+        ],
+        "mitre_techniques": [],
+        "playbook_reference": "NIST CSF: RS.RP-1, RS.CO-2"
+      },
+      "apt_hardening": {
+        "id": "apt_hardening",
+        "title": "Advanced Hardening and Threat Prevention",
+        "ai_prompt": "Implement advanced security measures to prevent APT reinfection and enhance detection capabilities.",
+        "phase": "Post-Incident",
+        "options": [
+          {
+            "label": "Deploy Advanced EDR and Behavioral Analytics",
+            "action": "ADVANCED_EDR_DEPLOYMENT",
+            "next_node": null
+          },
+          {
+            "label": "Implement Zero Trust Architecture",
+            "action": "ZERO_TRUST_IMPLEMENTATION", 
+            "next_node": null
+          }
+        ],
+        "mitre_techniques": [],
+        "playbook_reference": "NIST CSF: RS.IM-1, PR.AC-4"
+      }
+    }
+  },
+  {
+    "id": "data-breach-response",
+    "name": "Data Breach and Exfiltration Response",
+    "description": "Legal, regulatory, and technical response to data exfiltration incidents",
+    "start_node": "breach_assessment",
+    "nodes": {
+      "breach_assessment": {
+        "id": "breach_assessment",
+        "title": "Data Breach Assessment and Classification",
+        "ai_prompt": "Data exfiltration detected. Immediately assess scope and type of data involved to determine legal and regulatory obligations.",
+        "phase": "Detection",
+        "options": [
+          {
+            "label": "PII/PHI Data Involved - High Priority",
+            "action": "PII_PHI_BREACH",
+            "next_node": "regulatory_notification"
+          },
+          {
+            "label": "Intellectual Property Theft",
+            "action": "IP_THEFT",
+            "next_node": "forensic_preservation"
+          },
+          {
+            "label": "Financial Data Compromise",
+            "action": "FINANCIAL_BREACH",
+            "next_node": "regulatory_notification"
+          }
+        ],
+        "mitre_techniques": ["T1041", "T1048", "T1567"],
+        "playbook_reference": "GDPR Article 33, CCPA Section 1798.82"
+      },
+      "regulatory_notification": {
+        "id": "regulatory_notification",
+        "title": "Regulatory and Legal Notification Requirements",
+        "ai_prompt": "Personal data breach confirmed. Calculate notification timelines and prepare required regulatory filings.",
+        "phase": "Scoping",
+        "options": [
+          {
+            "label": "GDPR 72-Hour Notification Required",
+            "action": "GDPR_NOTIFICATION",
+            "next_node": "customer_notification"
+          },
+          {
+            "label": "HIPAA Breach Notification Process",
+            "action": "HIPAA_NOTIFICATION",
+            "next_node": "customer_notification"
+          },
+          {
+            "label": "State Law Notification Requirements",
+            "action": "STATE_LAW_NOTIFICATION",
+            "next_node": "customer_notification"
+          }
+        ],
+        "mitre_techniques": [],
+        "playbook_reference": "GDPR Article 33, HIPAA 164.404, State Breach Laws"
+      },
+      "forensic_preservation": {
+        "id": "forensic_preservation",
+        "title": "Forensic Evidence Preservation",
+        "ai_prompt": "Preserve forensic evidence for potential legal proceedings while maintaining chain of custody requirements.",
+        "phase": "Investigation",
+        "options": [
+          {
+            "label": "Court-Admissible Forensic Imaging",
+            "action": "LEGAL_FORENSICS",
+            "next_node": "exfiltration_analysis"
+          },
+          {
+            "label": "Business Continuity Focused Analysis",
+            "action": "BUSINESS_FORENSICS", 
+            "next_node": "exfiltration_analysis"
+          }
+        ],
+        "mitre_techniques": ["T1005", "T1039", "T1025"],
+        "playbook_reference": "ISO 27037, NIST SP 800-86"
+      },
+      "customer_notification": {
+        "id": "customer_notification",
+        "title": "Customer and Stakeholder Communication",
+        "ai_prompt": "Prepare customer notifications and stakeholder communications while coordinating with legal and PR teams.",
+        "phase": "Scoping",
+        "options": [
+          {
+            "label": "Immediate Public Disclosure",
+            "action": "IMMEDIATE_DISCLOSURE",
+            "next_node": "business_impact_assessment"
+          },
+          {
+            "label": "Controlled Phased Notification",
+            "action": "PHASED_NOTIFICATION",
+            "next_node": "business_impact_assessment"
+          }
+        ],
+        "mitre_techniques": [],
+        "playbook_reference": "FTC Breach Response Guidelines"
+      },
+      "exfiltration_analysis": {
+        "id": "exfiltration_analysis",
+        "title": "Data Exfiltration Analysis and Scope",
+        "ai_prompt": "Analyze what data was exfiltrated, when, and through what methods to determine full scope of breach.",
+        "phase": "Investigation",
+        "options": [
+          {
+            "label": "Database Access Log Analysis",
+            "action": "DATABASE_ANALYSIS",
+            "next_node": "breach_containment"
+          },
+          {
+            "label": "Network Traffic Analysis and DLP Logs",
+            "action": "NETWORK_DLP_ANALYSIS",
+            "next_node": "breach_containment"
+          }
+        ],
+        "mitre_techniques": ["T1213", "T1530", "T1114"],
+        "playbook_reference": "NIST CSF: DE.AE-2, DE.AE-3"
+      },
+      "business_impact_assessment": {
+        "id": "business_impact_assessment",
+        "title": "Business Impact and Financial Assessment",
+        "ai_prompt": "Assess financial impact including regulatory fines, litigation costs, and business disruption.",
+        "phase": "Scoping",
+        "options": [
+          {
+            "label": "Cyber Insurance Claim Initiation",
+            "action": "INSURANCE_CLAIM",
+            "next_node": "breach_containment"
+          },
+          {
+            "label": "Internal Cost Assessment",
+            "action": "COST_ASSESSMENT",
+            "next_node": "breach_containment"
+          }
+        ],
+        "mitre_techniques": [],
+        "playbook_reference": "Business Continuity Planning"
+      },
+      "breach_containment": {
+        "id": "breach_containment",
+        "title": "Data Breach Containment and Access Termination",
+        "ai_prompt": "Contain the breach by terminating unauthorized access while preserving evidence.",
+        "phase": "Remediation",
+        "options": [
+          {
+            "label": "Immediate Access Revocation",
+            "action": "ACCESS_REVOCATION",
+            "next_node": "credit_monitoring"
+          },
+          {
+            "label": "Gradual Containment with Monitoring",
+            "action": "GRADUAL_CONTAINMENT",
+            "next_node": "credit_monitoring"
+          }
+        ],
+        "mitre_techniques": [],
+        "playbook_reference": "NIST CSF: RS.RP-1, RS.MI-3"
+      },
+      "credit_monitoring": {
+        "id": "credit_monitoring", 
+        "title": "Victim Support and Credit Monitoring",
+        "ai_prompt": "Provide credit monitoring and identity theft protection services to affected individuals.",
+        "phase": "Post-Incident",
+        "options": [
+          {
+            "label": "Deploy Credit Monitoring Services",
+            "action": "CREDIT_MONITORING_DEPLOYMENT",
+            "next_node": null
+          },
+          {
+            "label": "Legal Settlement Preparation",
+            "action": "LEGAL_SETTLEMENT_PREP",
+            "next_node": null
+          }
+        ],
+        "mitre_techniques": [],
+        "playbook_reference": "FTC Identity Theft Guidelines"
+      }
+    }
+  },
+  {
+    "id": "ddos-response",
+    "name": "DDoS Attack Response",
+    "description": "Rapid availability restoration and attack mitigation for denial of service incidents",
+    "start_node": "availability_assessment",
+    "nodes": {
+      "availability_assessment": {
+        "id": "availability_assessment",
+        "title": "Service Availability Impact Assessment",
+        "ai_prompt": "DDoS attack detected affecting service availability. Prioritize immediate mitigation while gathering attack intelligence.",
+        "phase": "Detection",
+        "options": [
+          {
+            "label": "Critical Services Down - Emergency Response",
+            "action": "EMERGENCY_MITIGATION",
+            "next_node": "traffic_analysis"
+          },
+          {
+            "label": "Partial Impact - Controlled Mitigation",
+            "action": "CONTROLLED_MITIGATION",
+            "next_node": "attack_classification"
+          }
+        ],
+        "mitre_techniques": ["T1498", "T1499"],
+        "playbook_reference": "NIST CSF: PR.PT-5, DE.AE-1"
+      },
+      "attack_classification": {
+        "id": "attack_classification",
+        "title": "DDoS Attack Vector Classification",
+        "ai_prompt": "Classify the DDoS attack type to implement appropriate countermeasures and engage correct mitigation services.",
+        "phase": "Scoping",
+        "options": [
+          {
+            "label": "Volumetric Attack (Network Layer)",
+            "action": "VOLUMETRIC_RESPONSE",
+            "next_node": "isp_coordination"
+          },
+          {
+            "label": "Application Layer Attack (Layer 7)",
+            "action": "APPLICATION_RESPONSE",
+            "next_node": "waf_activation"
+          },
+          {
+            "label": "Protocol Attack (SYN Flood, etc.)",
+            "action": "PROTOCOL_RESPONSE",
+            "next_node": "traffic_analysis"
+          }
+        ],
+        "mitre_techniques": ["T1498.001", "T1498.002"],
+        "playbook_reference": "NIST CSF: DE.AE-2, DE.AE-3"
+      },
+      "isp_coordination": {
+        "id": "isp_coordination",
+        "title": "ISP and Upstream Provider Coordination",
+        "ai_prompt": "Coordinate with ISP for upstream traffic filtering and null routing of attack traffic.",
+        "phase": "Investigation",
+        "options": [
+          {
+            "label": "Activate ISP DDoS Protection",
+            "action": "ISP_PROTECTION",
+            "next_node": "service_restoration"
+          },
+          {
+            "label": "Implement BGP Blackholing",
+            "action": "BGP_BLACKHOLE",
+            "next_node": "service_restoration"
+          }
+        ],
+        "mitre_techniques": [],
+        "playbook_reference": "Internet Best Practices RFC 3882"
+      },
+      "waf_activation": {
+        "id": "waf_activation",
+        "title": "Web Application Firewall and CDN Activation",
+        "ai_prompt": "Activate WAF rules and CDN protection to filter application layer attacks.",
+        "phase": "Investigation",
+        "options": [
+          {
+            "label": "Deploy Rate Limiting and CAPTCHA",
+            "action": "RATE_LIMITING",
+            "next_node": "service_restoration"
+          },
+          {
+            "label": "Activate Cloud DDoS Protection",
+            "action": "CLOUD_PROTECTION",
+            "next_node": "service_restoration"
+          }
+        ],
+        "mitre_techniques": [],
+        "playbook_reference": "OWASP DDoS Prevention"
+      },
+      "traffic_analysis": {
+        "id": "traffic_analysis",
+        "title": "Attack Traffic Analysis and Intelligence",
+        "ai_prompt": "Analyze attack patterns, source IPs, and techniques for attribution and improved defense.",
+        "phase": "Investigation",
+        "options": [
+          {
+            "label": "Detailed Forensic Analysis",
+            "action": "FORENSIC_ANALYSIS",
+            "next_node": "service_restoration"
+          },
+          {
+            "label": "Real-time Attack Monitoring",
+            "action": "REALTIME_MONITORING",
+            "next_node": "service_restoration"
+          }
+        ],
+        "mitre_techniques": ["T1590"],
+        "playbook_reference": "NIST CSF: DE.AE-3, DE.DP-4"
+      },
+      "service_restoration": {
+        "id": "service_restoration",
+        "title": "Service Restoration and Capacity Recovery",
+        "ai_prompt": "Restore service availability while maintaining protection against ongoing or resumed attacks.",
+        "phase": "Remediation",
+        "options": [
+          {
+            "label": "Gradual Traffic Restoration",
+            "action": "GRADUAL_RESTORATION",
+            "next_node": "ddos_hardening"
+          },
+          {
+            "label": "Full Service Restoration",
+            "action": "FULL_RESTORATION",
+            "next_node": "ddos_hardening"
+          }
+        ],
+        "mitre_techniques": [],
+        "playbook_reference": "NIST CSF: RS.RP-1, RS.CO-5"
+      },
+      "ddos_hardening": {
+        "id": "ddos_hardening",
+        "title": "DDoS Defense Hardening and Preparation",
+        "ai_prompt": "Implement enhanced DDoS protection and prepare for future attacks based on lessons learned.",
+        "phase": "Post-Incident",
+        "options": [
+          {
+            "label": "Deploy Permanent DDoS Protection",
+            "action": "PERMANENT_PROTECTION",
+            "next_node": null
+          },
+          {
+            "label": "Update Incident Response Procedures",
+            "action": "UPDATE_PROCEDURES",
+            "next_node": null
+          }
+        ],
+        "mitre_techniques": [],
+        "playbook_reference": "NIST CSF: RS.IM-1, PR.PT-5"
+      }
+    }
+  },
+  {
+    "id": "insider-threat-response",
+    "name": "Insider Threat Investigation",
+    "description": "Covert investigation and response to malicious insider activities",
+    "start_node": "insider_assessment",
+    "nodes": {
+      "insider_assessment": {
+        "id": "insider_assessment",
+        "title": "Insider Threat Assessment and Classification",
+        "ai_prompt": "Potential insider threat detected. Conduct covert assessment without alerting the suspect while preserving evidence.",
+        "phase": "Detection",
+        "options": [
+          {
+            "label": "High Privilege User - Executive Investigation",
+            "action": "EXECUTIVE_INVESTIGATION",
+            "next_node": "legal_hr_coordination"
+          },
+          {
+            "label": "Standard Employee - Covert Monitoring",
+            "action": "COVERT_MONITORING",
+            "next_node": "access_analysis"
+          },
+          {
+            "label": "Contractor/Third Party - Vendor Investigation",
+            "action": "VENDOR_INVESTIGATION",
+            "next_node": "access_analysis"
+          }
+        ],
+        "mitre_techniques": ["T1078", "T1133"],
+        "playbook_reference": "NIST CSF: DE.AE-1, PR.AC-1"
+      },
+      "legal_hr_coordination": {
+        "id": "legal_hr_coordination",
+        "title": "Legal and HR Coordination",
+        "ai_prompt": "Coordinate with legal and HR teams for high-privilege insider investigation while maintaining confidentiality.",
+        "phase": "Scoping",
+        "options": [
+          {
+            "label": "Employee Rights and Privacy Review",
+            "action": "PRIVACY_REVIEW",
+            "next_node": "covert_evidence_collection"
+          },
+          {
+            "label": "Legal Hold and Preservation",
+            "action": "LEGAL_HOLD",
+            "next_node": "covert_evidence_collection"
+          }
+        ],
+        "mitre_techniques": [],
+        "playbook_reference": "Employment Law, Privacy Regulations"
+      },
+      "access_analysis": {
+        "id": "access_analysis",
+        "title": "Privileged Access and Activity Analysis",
+        "ai_prompt": "Analyze user access patterns, data access, and system activities to determine scope of potential insider threat.",
+        "phase": "Investigation",
+        "options": [
+          {
+            "label": "Database Access Log Analysis",
+            "action": "DATABASE_ACCESS_ANALYSIS",
+            "next_node": "behavioral_analysis"
+          },
+          {
+            "label": "File System Access Monitoring",
+            "action": "FILE_ACCESS_ANALYSIS",
+            "next_node": "behavioral_analysis"
+          }
+        ],
+        "mitre_techniques": ["T1005", "T1039", "T1083"],
+        "playbook_reference": "NIST CSF: DE.CM-1, DE.CM-3"
+      },
+      "covert_evidence_collection": {
+        "id": "covert_evidence_collection",
+        "title": "Covert Evidence Collection",
+        "ai_prompt": "Collect digital evidence without alerting the insider while maintaining legal admissibility.",
+        "phase": "Investigation",
+        "options": [
+          {
+            "label": "Endpoint Forensic Imaging",
+            "action": "ENDPOINT_FORENSICS",
+            "next_node": "behavioral_analysis"
+          },
+          {
+            "label": "Network Traffic Analysis",
+            "action": "NETWORK_FORENSICS",
+            "next_node": "behavioral_analysis"
+          }
+        ],
+        "mitre_techniques": ["T1041", "T1048"],
+        "playbook_reference": "ISO 27037, Legal Evidence Standards"
+      },
+      "behavioral_analysis": {
+        "id": "behavioral_analysis",
+        "title": "Behavioral Pattern and Intent Analysis",
+        "ai_prompt": "Analyze behavioral patterns to determine intent: malicious, negligent, or compromised account.",
+        "phase": "Investigation",
+        "options": [
+          {
+            "label": "Malicious Intent Confirmed",
+            "action": "MALICIOUS_CONFIRMED",
+            "next_node": "immediate_containment"
+          },
+          {
+            "label": "Negligent/Accidental Activity",
+            "action": "NEGLIGENT_ACTIVITY",
+            "next_node": "corrective_action"
+          },
+          {
+            "label": "Compromised Account Suspected",
+            "action": "COMPROMISED_ACCOUNT",
+            "next_node": "credential_investigation"
+          }
+        ],
+        "mitre_techniques": [],
+        "playbook_reference": "Behavioral Analytics Frameworks"
+      },
+      "immediate_containment": {
+        "id": "immediate_containment",
+        "title": "Immediate Access Containment",
+        "ai_prompt": "Immediately revoke access and contain the malicious insider while coordinating with law enforcement if applicable.",
+        "phase": "Remediation",
+        "options": [
+          {
+            "label": "Emergency Access Revocation",
+            "action": "EMERGENCY_REVOCATION",
+            "next_node": "law_enforcement_coordination"
+          },
+          {
+            "label": "Controlled Access Termination",
+            "action": "CONTROLLED_TERMINATION",
+            "next_node": "insider_remediation"
+          }
+        ],
+        "mitre_techniques": [],
+        "playbook_reference": "NIST CSF: RS.RP-1, RS.MI-3"
+      },
+      "credential_investigation": {
+        "id": "credential_investigation",
+        "title": "Credential Compromise Investigation",
+        "ai_prompt": "Investigate potential account compromise while protecting the innocent employee.",
+        "phase": "Investigation",
+        "options": [
+          {
+            "label": "Password Reset and MFA Enhancement",
+            "action": "CREDENTIAL_RESET",
+            "next_node": "insider_remediation"
+          },
+          {
+            "label": "Deep Credential Forensics",
+            "action": "CREDENTIAL_FORENSICS",
+            "next_node": "insider_remediation"
+          }
+        ],
+        "mitre_techniques": ["T1110", "T1556"],
+        "playbook_reference": "NIST CSF: PR.AC-1, DE.CM-3"
+      },
+      "corrective_action": {
+        "id": "corrective_action",
+        "title": "Corrective Action and Training",
+        "ai_prompt": "Implement corrective measures for negligent behavior while maintaining employee relations.",
+        "phase": "Remediation",
+        "options": [
+          {
+            "label": "Security Awareness Training",
+            "action": "SECURITY_TRAINING",
+            "next_node": "insider_remediation"
+          },
+          {
+            "label": "Process Improvement and Controls",
+            "action": "PROCESS_IMPROVEMENT",
+            "next_node": "insider_remediation"
+          }
+        ],
+        "mitre_techniques": [],
+        "playbook_reference": "NIST CSF: PR.AT-1, RS.IM-1"
+      },
+      "law_enforcement_coordination": {
+        "id": "law_enforcement_coordination",
+        "title": "Law Enforcement Coordination",
+        "ai_prompt": "Coordinate with law enforcement for criminal investigation while maintaining business continuity.",
+        "phase": "Remediation",
+        "options": [
+          {
+            "label": "File Criminal Complaint",
+            "action": "CRIMINAL_COMPLAINT",
+            "next_node": "insider_remediation"
+          },
+          {
+            "label": "Civil Action Only",
+            "action": "CIVIL_ACTION",
+            "next_node": "insider_remediation"
+          }
+        ],
+        "mitre_techniques": [],
+        "playbook_reference": "Computer Fraud and Abuse Act"
+      },
+      "insider_remediation": {
+        "id": "insider_remediation",
+        "title": "Insider Threat Program Enhancement",
+        "ai_prompt": "Enhance insider threat detection and prevention programs based on lessons learned.",
+        "phase": "Post-Incident",
+        "options": [
+          {
+            "label": "Deploy User Behavior Analytics",
+            "action": "UBA_DEPLOYMENT",
+            "next_node": null
+          },
+          {
+            "label": "Enhance Privileged Access Management",
+            "action": "PAM_ENHANCEMENT",
+            "next_node": null
+          }
+        ],
+        "mitre_techniques": [],
+        "playbook_reference": "NIST CSF: RS.IM-1, PR.AC-4"
+      }
+    }
   }
 ]

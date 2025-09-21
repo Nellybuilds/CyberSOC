@@ -87,12 +87,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Load actual playbook data from JSON file
       const playbooks = await storage.readJsonFile('playbook.json');
       
-      // Map alert IDs to playbook IDs
+      // Map alert IDs to playbook IDs with intelligent classification
       const alertToPlaybookMap = {
         "alert-001": "ransomware-response",
         "alert-002": "ransomware-response", 
+        "alert-003": "apt-response",
         "alert-004": "credential-compromise-response",
-        "alert-005": "phishing-response"
+        "alert-005": "phishing-response",
+        "alert-006": "data-breach-response",
+        "alert-007": "ddos-response",
+        "alert-008": "insider-threat-response"
       };
 
       const playbookId = alertToPlaybookMap[id as keyof typeof alertToPlaybookMap] || "ransomware-response";
@@ -149,8 +153,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { incidentType } = req.body;
       
-      // Validate incident type
-      const validIncidentTypes = ["ransomware", "credential-compromise", "phishing"];
+      // Validate incident type with expanded options
+      const validIncidentTypes = [
+        "ransomware", 
+        "credential-compromise", 
+        "phishing", 
+        "apt", 
+        "data-breach", 
+        "ddos", 
+        "insider-threat"
+      ];
       if (!incidentType || !validIncidentTypes.includes(incidentType)) {
         return res.status(400).json({ error: "Invalid incident type. Must be one of: " + validIncidentTypes.join(", ") });
       }
@@ -182,8 +194,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { scenario } = req.body;
       
-      // Validate scenario
-      const validScenarios = ["ransomware", "credential-compromise", "phishing"];
+      // Validate scenario with expanded options
+      const validScenarios = [
+        "ransomware", 
+        "credential-compromise", 
+        "phishing", 
+        "apt", 
+        "data-breach", 
+        "ddos", 
+        "insider-threat"
+      ];
       if (!scenario || !validScenarios.includes(scenario)) {
         return res.status(400).json({ error: "Invalid scenario. Must be one of: " + validScenarios.join(", ") });
       }
